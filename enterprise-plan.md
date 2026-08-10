@@ -8,22 +8,22 @@ None of the teams is making an unreasonable change. Each change addresses a vali
 
 The central question is:
 
-> How can one enterprise detect breaking changes across different contract types before the release reaches consumers?
+> How can one enterprise detect breaking changes across different spec types before the release reaches consumers?
 
 ## Contract Changes in the Release
 
-| Contract | Business motivation | Compatible change | Breaking change |
-|---|---|---|---|
-| OpenAPI | Order history is too large to return at once, and the API team is standardizing errors | Add optional `skip` and `limit` query parameters for pagination | Make `limit` mandatory, or change an existing error from `404` to `422` |
-| GraphQL | The customer portal is standardizing terminology with the rest of the order platform | Add an optional `estimatedDelivery` field | Rename `customerName` to `buyerName`, breaking existing queries that select `customerName` |
-| gRPC | The warehouse system needs globally unique order IDs | Add an optional `warehouseId` field | Change `orderId` from an integer to a string, or change the RPC error semantics |
-| AsyncAPI | Shipping partners need richer status information | Add an optional `trackingUrl` field to the event | Change `status` from a string such as `"SHIPPED"` into an object containing `code`, `reason`, and `updatedAt` |
+| Contract | Scenario & motivation | Legitimate proposed change | BCC finding | Remediation to demonstrate |
+|---|---|---|---|---|
+| OpenAPI | Order history is growing, so clients need pagination, and error handling is being standardized across the platform | Add optional `skip` and `limit` parameters as the safe change; make `limit` mandatory and change `404` to `422` as the breaking changes | Request-parameter and status-code incompatibility | Keep `limit` optional with a default; preserve `404`; use a new endpoint or version for the new behavior |
+| GraphQL | The customer portal is standardizing terminology with the rest of the order platform | Add optional `estimatedDelivery` as the safe change; rename `customerName` to `buyerName` as the breaking change | Existing queries selecting `customerName` no longer match the schema | Keep `customerName`, add `buyerName`, and deprecate the old field gradually |
+| gRPC | The warehouse system is expanding globally and needs IDs such as `EU-2026-00123` | Add optional `warehouseId` as the safe change; change `orderId` from an integer to a string as the breaking change | Protobuf field-type incompatibility; existing generated clients expect a number | Keep numeric `orderId` and add `globalOrderId: string`, or introduce a new RPC |
+| AsyncAPI | Shipping partners need richer shipment-status information | Add optional `trackingUrl` as the safe change; change `status` from a string into an object containing `code`, `reason`, and `updatedAt` as the breaking change | Event payload-shape incompatibility; existing consumers expect a string | Keep `status` as a string and add optional `statusDetails`, or publish a new event version |
 
 ## How to Present the Story
 
 ### 1. Establish the enterprise release
 
-Explain that four teams are evolving four different contracts as part of one global fulfillment release:
+Explain that four teams are evolving four different specs as part of one global fulfillment release:
 
 - REST/OpenAPI for external order-history clients;
 - GraphQL for the customer portal;
@@ -77,7 +77,7 @@ Compatible or incompatible
 Safely evolve, reject, or explicitly approve
 ```
 
-The message is not that the four specifications form one request path. The message is that one enterprise needs one compatibility gate across its contract estate.
+The message is not that the four specifications form one request path. The message is that one enterprise needs one compatibility gate across its specification landscape.
 
 ### 5. Close with CI
 
