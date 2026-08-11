@@ -23,8 +23,9 @@ The workflow:
 
 - runs for pull requests that change specifications or the workflow;
 - checks out the full Git history;
-- copies the full checkout, including `.git`, into a temporary repository;
-- explicitly fetches the pull request's base branch inside that repository;
+- mounts the complete repository root, including `.git`, into Docker;
+- fetches the pull request's base branch;
+- compares the proposed specification with the tracked baseline;
 - creates the license file from the GitHub secret;
 - runs the Specmatic Enterprise Docker image;
 - compares the pull request with its target branch;
@@ -33,14 +34,13 @@ The workflow:
 The important command is:
 
 ```shell
-docker compose \
-  -f bcc-enterprise-demo/docker-compose.yml \
-  run --rm \
-  --entrypoint specmatic \
-  bcc \
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$REPOSITORY_ROOT:/workspace" \
+  -w /workspace \
+  specmatic/enterprise:latest \
   backward-compatibility-check \
   --base-branch origin/main \
-  --repo-dir /workspace \
   --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
 ```
 

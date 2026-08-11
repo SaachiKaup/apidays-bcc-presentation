@@ -19,40 +19,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch pull request base branch
-        run: |
-          git fetch origin \
-            "refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
-          git rev-parse "origin/${{ github.event.pull_request.base.ref }}"
-
-      - name: Create Specmatic license file
+      - name: Run OpenAPI BCC
         env:
           SPECMATIC_LICENSE: ${{ secrets.SPECMATIC_LICENSE }}
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: |
           set -eu
-          TEMP_REPO=$(mktemp -d "$RUNNER_TEMP/bcc-repository.XXXXXX")
+          LICENSE_FILE="$RUNNER_TEMP/specmatic-license.txt"
           cleanup() {
-            rm -rf "$TEMP_REPO"
+            rm -f "$LICENSE_FILE"
           }
           trap cleanup EXIT
 
-          # Preserve the complete checkout, including .git and its credentials.
-          cp -a "$GITHUB_WORKSPACE/." "$TEMP_REPO/"
-
-          git -C "$TEMP_REPO" fetch origin \
+          git fetch origin \
             "refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH"
-          git -C "$TEMP_REPO" rev-parse "origin/$BASE_BRANCH"
+          git rev-parse "origin/$BASE_BRANCH"
+          printf '%s' "$SPECMATIC_LICENSE" > "$LICENSE_FILE"
 
-          printf '%s' "$SPECMATIC_LICENSE" \
-            > "$TEMP_REPO/bcc-enterprise-demo/license.txt"
-
-          docker compose \
-            -f "$TEMP_REPO/bcc-enterprise-demo/docker-compose.yml" \
-            run --rm \
-            --entrypoint specmatic \
-            bcc \
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -v "$LICENSE_FILE:/specmatic/specmatic-license.txt:ro" \
+            -w /workspace \
+            -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
+            specmatic/enterprise:latest \
             backward-compatibility-check \
             --base-branch "origin/$BASE_BRANCH" \
-            --repo-dir /workspace \
             --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
