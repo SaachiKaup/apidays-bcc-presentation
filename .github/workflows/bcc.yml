@@ -19,7 +19,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run OpenAPI BCC in isolated repository
+      - name: Fetch pull request base branch
+        run: |
+          git fetch origin \
+            "refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
+          git rev-parse "origin/${{ github.event.pull_request.base.ref }}"
+
+      - name: Create Specmatic license file
         env:
           SPECMATIC_LICENSE: ${{ secrets.SPECMATIC_LICENSE }}
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
