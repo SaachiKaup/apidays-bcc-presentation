@@ -22,6 +22,7 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
+        # COMPATIBLE pagination: add page size without requiring old clients to send it.
         - name: size
           in: query
           required: false
@@ -29,6 +30,7 @@ paths:
             type: integer
             minimum: 1
             default: 20
+        # COMPATIBLE pagination: keep offset optional and default it for old clients.
         - name: offset
           in: query
           required: false
@@ -58,6 +60,7 @@ paths:
                 $ref: '#/components/schemas/Order'
         '404':
           $ref: '#/components/responses/OrderNotFound'
+        # COMPATIBLE status-code evolution: retain 404 and add 422.
         '422':
           $ref: '#/components/responses/OrderNotFound'
         '401':
@@ -98,8 +101,10 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/OrderStatus'
+        # COMPATIBLE shape evolution: retain string status and add optional details.
         statusDetails:
           $ref: '#/components/schemas/OrderStatusDetails'
+        # COMPATIBLE type evolution: retain numeric id and add a new string identifier.
         internationalId:
           type: string
           example: EU-XYZ123
