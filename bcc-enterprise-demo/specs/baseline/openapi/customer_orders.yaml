@@ -23,20 +23,20 @@ paths:
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
         # ADD — this block can be uncommented directly; remove nothing.
-#        - name: size
-#          in: query
-#          required: false
-#          schema:
-#            type: integer
-#            minimum: 1
-#            default: 20
+        #- name: size
+        #  in: query
+        #  required: false
+        #  schema:
+        #    type: integer
+        #    minimum: 1
+        #    default: 20
         # ADD — this block can be uncommented directly; remove nothing.
-#        - name: offset
-#          in: query
-#          required: true
-#          schema:
-#            type: integer
-#            minimum: 0
+        #- name: offset
+        #  in: query
+        #  required: true
+        #  schema:
+        #    type: integer
+        #    minimum: 0
       responses:
         '200':
           description: Orders
@@ -59,9 +59,9 @@ paths:
                 $ref: '#/components/schemas/Order'
         '404':
           $ref: '#/components/responses/OrderNotFound'
-        # REPLACE — first remove the 404 block above, then uncomment this block.
-#        '422':
-#          $ref: '#/components/responses/OrderNotFound'
+        # REPLACE — remove the 404 block above, then uncomment this 422 block.
+        #'422':
+        #  $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 components:
@@ -89,29 +89,22 @@ components:
       format: int64
       example: 202600123
     # REPLACEMENT REFERENCE — use this instead for global IDs.
-#    OrderId:
-#      type: string
-#      example: EU-XYZ123
+    #OrderId:
+    #  type: string
+    #  example: EU-XYZ123
     OrderList:
       type: array
       items:
         $ref: '#/components/schemas/Order'
     Order:
       type: object
-      required: [id, customerId, customerName, status, total]
+      required: [id, customerId, status, total]
       properties:
         # The id property reuses the shared OrderId schema above.
         id:
           $ref: '#/components/schemas/OrderId'
         customerId:
           type: string
-        # REPLACE — remove the customerName block below first.
-        # Then rename it to buyerName.
-        customerName:
-          type: string
-        # REPLACEMENT REFERENCE — uncomment only after removing customerName.
-        #buyerName:
-        #  type: string
         status:
           $ref: '#/components/schemas/OrderStatus'
         total:
