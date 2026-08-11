@@ -19,27 +19,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch pull request base branch
-        run: |
-          git fetch origin \
-            "refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
-          git rev-parse "origin/${{ github.event.pull_request.base.ref }}"
-
-      - name: Create Specmatic license file
+      - name: Run OpenAPI BCC in isolated repository
         env:
           SPECMATIC_LICENSE: ${{ secrets.SPECMATIC_LICENSE }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: |
-          printf '%s' "$SPECMATIC_LICENSE" \
-            > bcc-enterprise-demo/license.txt
+          set -eu
+          TEMP_REPO=$(mktemp -d "$RUNNER_TEMP/bcc-repository.XXXXXX")
+          cleanup() {
+            rm -rf "$TEMP_REPO"
+          }
+          trap cleanup EXIT
 
-      - name: Run OpenAPI BCC
-        run: |
+          # Preserve the complete checkout, including .git and its credentials.
+          cp -a "$GITHUB_WORKSPACE/." "$TEMP_REPO/"
+
+          git -C "$TEMP_REPO" fetch origin \
+            "refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH"
+          git -C "$TEMP_REPO" rev-parse "origin/$BASE_BRANCH"
+
+          printf '%s' "$SPECMATIC_LICENSE" \
+            > "$TEMP_REPO/bcc-enterprise-demo/license.txt"
+
           docker compose \
-            -f bcc-enterprise-demo/docker-compose.yml \
+            -f "$TEMP_REPO/bcc-enterprise-demo/docker-compose.yml" \
             run --rm \
             --entrypoint specmatic \
             bcc \
             backward-compatibility-check \
-            --base-branch origin/${{ github.event.pull_request.base.ref }} \
+            --base-branch "origin/$BASE_BRANCH" \
             --repo-dir /workspace \
-            --target-path specs/baseline/openapi/orders.yaml
+            --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml

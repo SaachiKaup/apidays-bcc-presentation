@@ -23,7 +23,8 @@ The workflow:
 
 - runs for pull requests that change specifications or the workflow;
 - checks out the full Git history;
-- explicitly fetches the pull request's base branch;
+- copies the full checkout, including `.git`, into a temporary repository;
+- explicitly fetches the pull request's base branch inside that repository;
 - creates the license file from the GitHub secret;
 - runs the Specmatic Enterprise Docker image;
 - compares the pull request with its target branch;
