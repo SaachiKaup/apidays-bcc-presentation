@@ -44,7 +44,7 @@ if [ ! -f "$LICENSE" ]; then
 fi
 
 echo "Running:"
-echo "docker run --rm -v $SNAPSHOT:/workspace -v $LICENSE:/specmatic/specmatic-license.txt:ro -w /workspace -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt specmatic/enterprise:latest backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
+echo "docker run --rm -v $SNAPSHOT:/workspace -v $LICENSE:/specmatic/specmatic-license.txt:ro -w /workspace -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt specmatic/enterprise:latest backward-compatibility-check --base-branch origin/main --repo-dir /workspace --target-path $TARGET"
 echo
 
 set +e
@@ -55,7 +55,7 @@ docker run --rm \
   -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
   specmatic/enterprise:latest \
   backward-compatibility-check \
-  --base-branch main \
+  --base-branch origin/main \
   --repo-dir /workspace \
   --target-path "$TARGET"
 STATUS=$?
