@@ -23,13 +23,13 @@ paths:
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
         # Demo proposal: INSERT this optional page-size parameter; remove nothing.
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 20
+#        - name: size
+#          in: query
+#          required: false
+#          schema:
+#            type: integer
+#            minimum: 1
+#            default: 20
         # Demo proposal: INSERT this mandatory offset parameter; remove nothing.
         #- name: offset
         #  in: query
