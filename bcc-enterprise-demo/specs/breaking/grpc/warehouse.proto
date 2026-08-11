@@ -28,7 +28,7 @@ message ReserveOrderResponse {
 }
 
 message Order {
-  string order_id = 1;
+  string order_id = 1; // e.g. "EU-XYZ123"
   string warehouse_id = 2;
   string status = 3;
   int64 total_minor_units = 4;

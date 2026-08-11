@@ -241,7 +241,7 @@ Reference files:
 
 ### gRPC: globally unique warehouse identifiers
 
-International warehouses need IDs such as `EU-2026-00123`. The change modifies only `Order.order_id` in the response from `int64` to `string`.
+International warehouses need IDs such as `EU-XYZ123`. The change modifies only `Order.order_id` in the response from `int64` to `string`, allowing values such as `"EU-XYZ123"`.
 
 Run:
 
@@ -316,3 +316,28 @@ bcc-enterprise-demo/
     ├── compatible/
     └── breaking/
 ```
+
+## Alternative ways to run BCC
+
+The normal demo flow is `./scripts/run-bcc.sh`. You can also run the BCC check manually after changing a baseline specification.
+
+Run the locally installed Specmatic Enterprise CLI from this directory:
+
+```shell
+specmatic-enterprise backward-compatibility-check \
+  --base-branch main \
+  --repo-dir .. \
+  --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+```
+
+Or run the same check through the Specmatic Enterprise Docker image:
+
+```shell
+docker compose run --rm --entrypoint specmatic bcc \
+  backward-compatibility-check \
+  --base-branch main \
+  --repo-dir /workspace \
+  --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+```
+
+Replace the target path with the relevant GraphQL, gRPC, or AsyncAPI specification when needed. The repository root and target path must use the same root: `..` and `bcc-enterprise-demo/...` for the local command, or `/workspace` and `bcc-enterprise-demo/...` inside Docker.
