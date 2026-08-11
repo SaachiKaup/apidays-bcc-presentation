@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Customer Orders API
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: https://orders.example.test
 security:
@@ -22,21 +22,19 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
-        # ADD — this block can be uncommented directly; remove nothing.
-        #- name: size
-        #  in: query
-        #  required: false
-        #  schema:
-        #    type: integer
-        #    minimum: 1
-        #    default: 20
-        # ADD — this block can be uncommented directly; remove nothing.
-        #- name: offset
-        #  in: query
-        #  required: true
-        #  schema:
-        #    type: integer
-        #    minimum: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        - name: offset
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
       responses:
         '200':
           description: Orders
@@ -57,11 +55,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-        '404':
+        '422':
           $ref: '#/components/responses/OrderNotFound'
-        # REPLACE — remove the 404 block above, then uncomment this 422 block.
-        #'422':
-        #  $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 components:
@@ -82,16 +77,9 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
-    # REPLACE — change this shared schema from integer to string once.
-    # The path parameter and response id both reference it.
     OrderId:
-      type: integer
-      format: int64
-      example: 202600123
-    # REPLACEMENT REFERENCE — use this instead for global IDs.
-    #OrderId:
-    #  type: string
-    #  example: EU-XYZ123
+      type: string
+      example: EU-XYZ123
     OrderList:
       type: array
       items:
@@ -100,7 +88,6 @@ components:
       type: object
       required: [id, customerId, status, total]
       properties:
-        # The id property reuses the shared OrderId schema above.
         id:
           $ref: '#/components/schemas/OrderId'
         customerId:
@@ -113,20 +100,17 @@ components:
         currency:
           type: string
     OrderStatus:
-      type: string
-      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      # REPLACE — remove the string type and enum above first.
-      # Then uncomment the structured object below.
-      #required: [code, reason, updatedAt]
-      #properties:
-      #  code:
-      #    type: string
-      #    enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      #  reason:
-      #    type: string
-      #  updatedAt:
-      #    type: string
-      #    format: date-time
+      type: object
+      required: [code, reason, updatedAt]
+      properties:
+        code:
+          type: string
+          enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+        reason:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
     OrderStatusCode:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
