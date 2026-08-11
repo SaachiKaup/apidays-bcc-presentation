@@ -1,0 +1,28 @@
+scalar DateTime
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+type Money {
+  amount: Float!
+  currency: String!
+}
+
+type Order {
+  id: ID!
+  buyerName: String!
+  status: OrderStatus!
+  deliveryDate: DateTime
+  estimatedDelivery: DateTime
+  total: Money!
+}
+
+type Query {
+  order(id: ID!): Order!
+  orders(status: OrderStatus, skip: Int = 0, limit: Int = 20): [Order!]!
+}

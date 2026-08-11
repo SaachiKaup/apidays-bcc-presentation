@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package fulfillment.warehouse.v1;
+
+service WarehouseOrders {
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  rpc ReserveOrder(ReserveOrderRequest) returns (ReserveOrderResponse);
+}
+
+message GetOrderRequest {
+  int64 order_id = 1;
+  string warehouse_id = 2;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message ReserveOrderRequest {
+  int64 order_id = 1;
+  string warehouse_id = 2;
+  int32 priority = 3;
+}
+
+message ReserveOrderResponse {
+  bool accepted = 1;
+  string reservation_id = 2;
+}
+
+message Order {
+  int64 order_id = 1;
+  string warehouse_id = 2;
+  string status = 3;
+  int64 total_minor_units = 4;
+  string global_order_id = 5;
+}

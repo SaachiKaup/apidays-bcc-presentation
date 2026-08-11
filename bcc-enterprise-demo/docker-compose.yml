@@ -1,0 +1,10 @@
+services:
+  bcc:
+    image: specmatic/enterprise:latest
+    working_dir: /demo
+    entrypoint: ["sh", "/demo/scripts/run-bcc.sh"]
+    volumes:
+      - ./:/demo
+      - ${SPECMATIC_LICENSE_FILE:?Set SPECMATIC_LICENSE_FILE to your Specmatic license file}:/specmatic/specmatic-license.txt:ro
+    environment:
+      SPECMATIC_LICENSE_PATH: /specmatic/specmatic-license.txt

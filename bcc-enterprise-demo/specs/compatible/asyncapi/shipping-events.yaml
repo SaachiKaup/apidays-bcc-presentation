@@ -1,0 +1,45 @@
+asyncapi: 3.0.0
+info:
+  title: Shipment Events
+  version: 1.1.0
+  description: Events consumed by shipping partners.
+servers:
+  production:
+    host: events.example.test
+    protocol: kafka
+channels:
+  shipmentStatusChanged:
+    address: shipment-status-changed
+    messages:
+      shipmentStatusChanged:
+        $ref: '#/components/messages/ShipmentStatusChanged'
+operations:
+  publishShipmentStatus:
+    action: send
+    channel:
+      $ref: '#/channels/shipmentStatusChanged'
+    messages:
+      - $ref: '#/channels/shipmentStatusChanged/messages/shipmentStatusChanged'
+components:
+  messages:
+    ShipmentStatusChanged:
+      name: ShipmentStatusChanged
+      title: Shipment status update
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ShipmentStatusChanged'
+  schemas:
+    ShipmentStatusChanged:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum: [PACKED, SHIPPED, DELIVERED, RETURNED]
+        trackingNumber:
+          type: string
+        trackingUrl:
+          type: string
+          format: uri
