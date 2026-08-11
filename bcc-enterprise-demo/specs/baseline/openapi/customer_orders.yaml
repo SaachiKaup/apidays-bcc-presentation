@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Customer Orders API
+  version: 1.0.0
+servers:
+  - url: https://orders.example.test
+security:
+  - bearerAuth: []
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders for a customer
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatusCode'
+        # Demo proposal: INSERT this optional page-size parameter; remove nothing.
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        # Demo proposal: INSERT this mandatory offset parameter; remove nothing.
+        #- name: offset
+        #  in: query
+        #  required: true
+        #  schema:
+        #    type: integer
+        #    minimum: 0
+      responses:
+        '200':
+          description: Orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      summary: Get one order
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/OrderNotFound'
+        # Demo proposal: REMOVE the 404 response block above and REPLACE it with 422.
+        # '422':
+        #   $ref: '#/components/responses/OrderNotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      # Demo proposal: REMOVE the integer type and numeric example below.
+      # REPLACE them with type: string and example: EU-XYZ123.
+      schema:
+        type: integer
+        format: int64
+        example: 202600123
+        # Demo proposal: change this path ID to string, e.g. EU-XYZ123.
+  responses:
+    Unauthorized:
+      description: Authentication required
+    OrderNotFound:
+      description: Order does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    OrderList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Order'
+    Order:
+      type: object
+      required: [id, customerId, customerName, status, total]
+      properties:
+        # Demo proposal: REMOVE the integer type and numeric example below.
+        # REPLACE them with: type: string and example: EU-XYZ123.
+        id:
+          type: integer
+          format: int64
+          example: 202600123
+        # Demo proposal: the id block above is the block to change.
+        # type: string
+        # example: EU-XYZ123
+        customerId:
+          type: string
+        # Demo proposal: REMOVE the customerName block below.
+        # REPLACE it with buyerName: type: string.
+        customerName:
+          type: string
+        # Demo proposal: rename customerName to buyerName.
+        # buyerName:
+        #   type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        total:
+          type: number
+          format: double
+        currency:
+          type: string
+    OrderStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+      # Demo proposal: REMOVE the string type and enum above.
+      # REPLACE them with the structured object below.
+      # required: [code, reason, updatedAt]
+      # properties:
+      #   code:
+      #     type: string
+      #   reason:
+      #     type: string
+      #   updatedAt:
+      #     type: string
+      #     format: date-time
+    OrderStatusCode:
+      type: string
+      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+    Problem:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
