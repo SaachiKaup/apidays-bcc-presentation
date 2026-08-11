@@ -29,6 +29,13 @@ paths:
             type: integer
             minimum: 0
             default: 0
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
       responses:
         '200':
           description: Orders
