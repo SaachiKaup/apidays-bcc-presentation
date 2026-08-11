@@ -42,4 +42,4 @@ jobs:
             backward-compatibility-check \
             --base-branch origin/${{ github.event.pull_request.base.ref }} \
             --repo-dir /workspace \
-            --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+            --target-path specs/baseline/openapi/orders.yaml
