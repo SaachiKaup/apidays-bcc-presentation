@@ -22,7 +22,7 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
-        # Demo proposal: INSERT this optional page-size parameter; remove nothing.
+        # ADD — this block can be uncommented directly; remove nothing.
 #        - name: size
 #          in: query
 #          required: false
@@ -30,13 +30,13 @@ paths:
 #            type: integer
 #            minimum: 1
 #            default: 20
-        # Demo proposal: INSERT this mandatory offset parameter; remove nothing.
-        #- name: offset
-        #  in: query
-        #  required: true
-        #  schema:
-        #    type: integer
-        #    minimum: 0
+        # ADD — this block can be uncommented directly; remove nothing.
+#        - name: offset
+#          in: query
+#          required: true
+#          schema:
+#            type: integer
+#            minimum: 0
       responses:
         '200':
           description: Orders
@@ -59,9 +59,9 @@ paths:
                 $ref: '#/components/schemas/Order'
         '404':
           $ref: '#/components/responses/OrderNotFound'
-        # Demo proposal: REMOVE the 404 response block above and REPLACE it with 422.
-        # '422':
-        #   $ref: '#/components/responses/OrderNotFound'
+        # REPLACE — first remove the 404 block above, then uncomment this block.
+#        '422':
+#          $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 components:
@@ -70,13 +70,8 @@ components:
       name: orderId
       in: path
       required: true
-      # Demo proposal: REMOVE the integer type and numeric example below.
-      # REPLACE them with type: string and example: EU-XYZ123.
       schema:
-        type: integer
-        format: int64
-        example: 202600123
-        # Demo proposal: change this path ID to string, e.g. EU-XYZ123.
+        $ref: '#/components/schemas/OrderId'
   responses:
     Unauthorized:
       description: Authentication required
@@ -87,6 +82,16 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    # REPLACE — change this shared schema from integer to string once.
+    # The path parameter and response id both reference it.
+    OrderId:
+      type: integer
+      format: int64
+      example: 202600123
+    # REPLACEMENT REFERENCE — use this instead for global IDs.
+#    OrderId:
+#      type: string
+#      example: EU-XYZ123
     OrderList:
       type: array
       items:
@@ -95,24 +100,18 @@ components:
       type: object
       required: [id, customerId, customerName, status, total]
       properties:
-        # Demo proposal: REMOVE the integer type and numeric example below.
-        # REPLACE them with: type: string and example: EU-XYZ123.
+        # The id property reuses the shared OrderId schema above.
         id:
-          type: integer
-          format: int64
-          example: 202600123
-        # Demo proposal: the id block above is the block to change.
-        # type: string
-        # example: EU-XYZ123
+          $ref: '#/components/schemas/OrderId'
         customerId:
           type: string
-        # Demo proposal: REMOVE the customerName block below.
-        # REPLACE it with buyerName: type: string.
+        # REPLACE — remove the customerName block below first.
+        # Then rename it to buyerName.
         customerName:
           type: string
-        # Demo proposal: rename customerName to buyerName.
-        # buyerName:
-        #   type: string
+        # REPLACEMENT REFERENCE — uncomment only after removing customerName.
+        #buyerName:
+        #  type: string
         status:
           $ref: '#/components/schemas/OrderStatus'
         total:
@@ -123,17 +122,17 @@ components:
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      # Demo proposal: REMOVE the string type and enum above.
-      # REPLACE them with the structured object below.
-      # required: [code, reason, updatedAt]
-      # properties:
-      #   code:
-      #     type: string
-      #   reason:
-      #     type: string
-      #   updatedAt:
-      #     type: string
-      #     format: date-time
+      # REPLACE — remove the string type and enum above first.
+      # Then uncomment the structured object below.
+      #required: [code, reason, updatedAt]
+      #properties:
+      #  code:
+      #    type: string
+      #  reason:
+      #    type: string
+      #  updatedAt:
+      #    type: string
+      #    format: date-time
     OrderStatusCode:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
