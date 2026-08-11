@@ -108,7 +108,7 @@ The committed `specs/breaking/graphql/orders.graphqls` contains the proposed ver
 
 ### gRPC: globally unique warehouse identifiers
 
-International warehouses need globally unique IDs such as `EU-2026-00123`. The proposed change changes the protobuf field `order_id` from `int64` to `string`.
+International warehouses need globally unique IDs such as `EU-2026-00123`. The proposed change changes the `order_id` field in the `Order` response from `int64` to `string`.
 
 Run:
 

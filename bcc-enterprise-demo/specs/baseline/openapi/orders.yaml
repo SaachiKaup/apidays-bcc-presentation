@@ -12,8 +12,16 @@ paths:
       operationId: listOrders
       summary: List orders for a customer
       parameters:
-        - $ref: '#/components/parameters/CustomerId'
-        - $ref: '#/components/parameters/Status'
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
       responses:
         '200':
           description: Orders
@@ -42,18 +50,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 components:
   parameters:
-    CustomerId:
-      name: customerId
-      in: query
-      required: true
-      schema:
-        type: string
-    Status:
-      name: status
-      in: query
-      required: false
-      schema:
-        $ref: '#/components/schemas/OrderStatus'
     OrderId:
       name: orderId
       in: path

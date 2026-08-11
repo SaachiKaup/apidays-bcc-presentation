@@ -2,7 +2,8 @@
 
 set -eu
 
-ROOT=/workspace
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml"
 
 git -C "$ROOT" diff --quiet -- "$TARGET" || { echo "Target already changed: $TARGET" >&2; exit 1; }

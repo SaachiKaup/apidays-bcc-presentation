@@ -2,7 +2,8 @@
 
 set -eu
 
-ROOT=/workspace
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 
 case "${1:-}" in
   openapi)

@@ -32,5 +32,4 @@ message Order {
   string warehouse_id = 2;
   string status = 3;
   int64 total_minor_units = 4;
-  string global_order_id = 5;
 }
