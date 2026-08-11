@@ -2,107 +2,112 @@
 
 set -eu
 
-SCENARIO="${1:-breaking}"
-DEMO_ROOT=/demo
-WORK_REPO=/tmp/bcc-enterprise-demo-repo
-REPORT_DIR="$DEMO_ROOT/build/reports/$SCENARIO"
+REPO_ROOT=/workspace
+DEMO_ROOT="$REPO_ROOT/bcc-enterprise-demo"
+YES=false
+SPEC_TYPE="${1:-}"
 
-case "$SCENARIO" in
-  compatible|breaking|remediated|wip)
+if [ "${2:-}" = "--yes" ]; then
+  YES=true
+fi
+
+if [ -z "$SPEC_TYPE" ]; then
+  echo "Which spec type should be demonstrated?"
+  echo "1) openapi"
+  echo "2) graphql"
+  echo "3) grpc"
+  echo "4) asyncapi"
+  printf "Choose 1-4: "
+  read -r choice
+  case "$choice" in
+    1) SPEC_TYPE=openapi ;;
+    2) SPEC_TYPE=graphql ;;
+    3) SPEC_TYPE=grpc ;;
+    4) SPEC_TYPE=asyncapi ;;
+    *) echo "Invalid choice" >&2; exit 2 ;;
+  esac
+fi
+
+case "$SPEC_TYPE" in
+  openapi)
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-openapi.sh"
+    TARGET="bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
     ;;
-  ci)
-    SCENARIO=breaking
+  graphql)
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-graphql.sh"
+    TARGET="bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls"
+    ;;
+  grpc)
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-grpc.sh"
+    TARGET="bcc-enterprise-demo/specs/baseline/grpc/warehouse.proto"
+    ;;
+  asyncapi)
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-asyncapi.sh"
+    TARGET="bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml"
     ;;
   *)
-    echo "Usage: docker compose run --rm bcc {compatible|breaking|remediated|wip|ci}" >&2
+    echo "Usage: docker compose run --rm -it bcc [openapi|graphql|grpc|asyncapi] [--yes]" >&2
     exit 2
     ;;
 esac
 
-rm -rf "$WORK_REPO"
-mkdir -p "$WORK_REPO/specs" "$REPORT_DIR"
-
-cp -R "$DEMO_ROOT/specs/baseline/." "$WORK_REPO/specs/"
-
-git -C "$WORK_REPO" init -q
-git -C "$WORK_REPO" config user.email "demo@specmatic.local"
-git -C "$WORK_REPO" config user.name "Specmatic BCC Demo"
-git -C "$WORK_REPO" add specs
-git -C "$WORK_REPO" commit -qm "baseline contract specifications"
-git -C "$WORK_REPO" branch -M main
-
-if [ "$SCENARIO" = "wip" ]; then
-  cp -R "$DEMO_ROOT/specs/compatible/." "$WORK_REPO/specs/"
-  cp "$DEMO_ROOT/specs/breaking/openapi/orders.yaml" "$WORK_REPO/specs/openapi/orders.yaml"
-  WIP_OPENAPI="$WORK_REPO/specs/openapi/orders.yaml"
-  awk '
-    { print }
-    /summary: List orders for a customer with mandatory pagination/ {
-      print "      tags:"
-      print "        - WIP"
-    }
-  ' "$WIP_OPENAPI" > "$WIP_OPENAPI.tmp"
-  mv "$WIP_OPENAPI.tmp" "$WIP_OPENAPI"
-elif [ "$SCENARIO" = "remediated" ]; then
-  cp -R "$DEMO_ROOT/specs/compatible/." "$WORK_REPO/specs/"
-else
-  cp -R "$DEMO_ROOT/specs/$SCENARIO/." "$WORK_REPO/specs/"
+if ! git -C "$REPO_ROOT" diff --quiet -- "$TARGET" || \
+   ! git -C "$REPO_ROOT" diff --cached --quiet -- "$TARGET"; then
+  echo "The target spec already has changes: $TARGET" >&2
+  echo "Clean it before starting another demonstration." >&2
+  exit 1
 fi
 
-echo "=== Specmatic Backward Compatibility Demo ==="
-echo "Scenario: $SCENARIO"
-echo "Baseline: main"
-echo "Target:   specs/"
+if ! git -C "$REPO_ROOT" ls-files --error-unmatch "$TARGET" >/dev/null 2>&1; then
+  echo "The baseline spec is not committed in the current Git branch: $TARGET" >&2
+  exit 1
+fi
+
+echo "Applying the $SPEC_TYPE breaking change..."
+sh "$CHANGE_SCRIPT"
+
+RUN_BCC=y
+if [ "$YES" != true ]; then
+  printf "Run the Specmatic BCC check now? [Y/n] "
+  read -r RUN_BCC
+fi
+
+if [ "$RUN_BCC" = "n" ] || [ "$RUN_BCC" = "N" ]; then
+  echo "Change left in the working tree."
+  echo "Run: docker compose run --rm --entrypoint specmatic bcc backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
+  echo "Clean up: docker compose run --rm --entrypoint sh bcc /workspace/bcc-enterprise-demo/scripts/cleanup.sh $SPEC_TYPE"
+  exit 0
+fi
+
 echo
+echo "Running:"
+echo "specmatic backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
+echo
+
+# Remove reports from an earlier run so they cannot be mistaken for changed
+# specifications by the repository-wide compatibility check.
+rm -rf "$REPO_ROOT/build" "$DEMO_ROOT/build"
 
 set +e
-(
-  cd "$WORK_REPO"
-  specmatic backward-compatibility-check \
-    --repo-dir "$WORK_REPO" \
-    --base-branch main \
-    --target-path specs
-)
-STATUS=$?
+specmatic backward-compatibility-check \
+  --base-branch main \
+  --repo-dir "$REPO_ROOT" \
+  --target-path "$TARGET"
+BCC_STATUS=$?
 set -e
 
-if [ -d "$WORK_REPO/build" ]; then
-  cp -R "$WORK_REPO/build/." "$REPORT_DIR/"
-fi
-
 echo
-echo "Reports: $REPORT_DIR"
-
-if [ "$SCENARIO" = "breaking" ]; then
-  if [ "$STATUS" -eq 0 ]; then
-    echo "ERROR: breaking scenario unexpectedly passed" >&2
-    exit 1
-  fi
-  echo "Expected result: incompatible specifications detected"
-  exit 0
+CLEANUP=y
+if [ "$YES" != true ]; then
+  printf "Clean up the $SPEC_TYPE change? [Y/n] "
+  read -r CLEANUP
 fi
 
-if [ "$SCENARIO" = "ci" ]; then
-  if [ "$STATUS" -eq 0 ]; then
-    echo "ERROR: CI scenario unexpectedly passed" >&2
-    exit 1
-  fi
-  echo "CI gate result: failed as expected for an unapproved breaking change"
-  exit 0
+if [ "$CLEANUP" = "n" ] || [ "$CLEANUP" = "N" ]; then
+  echo "Change left in the working tree."
+  echo "Clean up: docker compose run --rm --entrypoint sh bcc /workspace/bcc-enterprise-demo/scripts/cleanup.sh $SPEC_TYPE"
+else
+  sh "$DEMO_ROOT/scripts/cleanup.sh" "$SPEC_TYPE"
 fi
 
-if [ "$SCENARIO" = "wip" ]; then
-  if [ "$STATUS" -ne 0 ]; then
-    echo "ERROR: WIP scenario failed the command" >&2
-    exit 1
-  fi
-  echo "Expected result: WIP feedback was reported without failing the check"
-  exit 0
-fi
-
-if [ "$STATUS" -ne 0 ]; then
-  echo "ERROR: $SCENARIO scenario failed unexpectedly" >&2
-  exit "$STATUS"
-fi
-
-echo "Expected result: compatible specifications"
+exit "$BCC_STATUS"
