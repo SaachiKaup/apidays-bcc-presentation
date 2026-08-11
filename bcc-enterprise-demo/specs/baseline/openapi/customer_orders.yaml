@@ -22,7 +22,6 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
-        # ADD — this block can be uncommented directly; remove nothing.
         #- name: size
         #  in: query
         #  required: false
@@ -30,7 +29,6 @@ paths:
         #    type: integer
         #    minimum: 1
         #    default: 20
-        # ADD — this block can be uncommented directly; remove nothing.
         #- name: offset
         #  in: query
         #  required: true
@@ -59,7 +57,6 @@ paths:
                 $ref: '#/components/schemas/Order'
         '404':
           $ref: '#/components/responses/OrderNotFound'
-        # REPLACE — remove the 404 block above, then uncomment this 422 block.
         #'422':
         #  $ref: '#/components/responses/OrderNotFound'
         '401':
@@ -82,13 +79,10 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
-    # REPLACE — change this shared schema from integer to string once.
-    # The path parameter and response id both reference it.
     OrderId:
       type: integer
       format: int64
       example: 202600123
-    # REPLACEMENT REFERENCE — use this instead for global IDs.
     #OrderId:
     #  type: string
     #  example: EU-XYZ123
@@ -100,7 +94,6 @@ components:
       type: object
       required: [id, customerId, status, total]
       properties:
-        # The id property reuses the shared OrderId schema above.
         id:
           $ref: '#/components/schemas/OrderId'
         customerId:
@@ -115,8 +108,6 @@ components:
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      # REPLACE — remove the string type and enum above first.
-      # Then uncomment the structured object below.
       #required: [code, reason, updatedAt]
       #properties:
       #  code:
