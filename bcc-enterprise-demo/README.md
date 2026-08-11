@@ -41,7 +41,7 @@ The script follows the real Git flow:
 
 1. Apply and stage optional `skip`, then run `git commit`. The hook runs BCC and the commit succeeds with `COMPATIBLE`.
 2. Apply and stage mandatory `limit`, then run `git commit` again. The hook reports `INCOMPATIBLE` and blocks the commit.
-3. Choose whether to undo the compatible demonstration commit.
+3. Choose whether to undo the compatible demonstration commit and run cleanup automatically.
 
 The script does not run BCC separately and does not bypass the hook. During the hook,
 the staged OpenAPI specification is copied into an isolated temporary Git repository.
