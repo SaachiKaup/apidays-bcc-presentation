@@ -110,7 +110,7 @@ echo
 
 # Remove reports from an earlier run so they cannot be mistaken for changed
 # specifications by the repository-wide compatibility check.
-rm -rf "$REPO_ROOT/build" "$DEMO_ROOT/build"
+rm -rf "$DEMO_ROOT/build"
 
 set +e
 if [ "${SPECMATIC_IN_CONTAINER:-false}" = "true" ]; then

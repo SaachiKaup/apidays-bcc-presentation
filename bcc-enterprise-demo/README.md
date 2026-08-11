@@ -67,6 +67,14 @@ docker compose -f ./docker-compose.yml run --rm \
 
 The target path changes for GraphQL, gRPC, and AsyncAPI.
 
+Reports are written to this local directory:
+
+```text
+bcc-enterprise-demo/build/
+```
+
+They remain available after the Docker container exits because the demo directory is bind-mounted into the container.
+
 ## Demonstrations and expected results
 
 Each result is deliberately shown as only `COMPATIBLE` or `INCOMPATIBLE` for now. The detailed BCC explanation can be added to the presentation later.
@@ -274,6 +282,12 @@ Reference files:
 ## Manual cleanup
 
 If you decline cleanup, restore the selected file directly:
+
+```shell
+./scripts/cleanup.sh
+```
+
+With no argument, all four baseline specifications are restored. To restore only one:
 
 ```shell
 ./scripts/cleanup.sh openapi

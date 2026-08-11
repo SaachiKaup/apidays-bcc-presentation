@@ -1,7 +1,7 @@
 services:
   bcc:
     image: specmatic/enterprise:latest
-    working_dir: /workspace
+    working_dir: /workspace/bcc-enterprise-demo
     entrypoint: ["sh", "/workspace/bcc-enterprise-demo/scripts/run-bcc.sh"]
     volumes:
       - ../:/workspace
