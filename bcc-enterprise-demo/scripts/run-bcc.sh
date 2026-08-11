@@ -2,14 +2,32 @@
 
 set -eu
 
-REPO_ROOT=/workspace
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 DEMO_ROOT="$REPO_ROOT/bcc-enterprise-demo"
 YES=false
 SPEC_TYPE="${1:-}"
+OPENAPI_OPTION=""
 
-if [ "${2:-}" = "--yes" ]; then
-  YES=true
+if [ -n "$SPEC_TYPE" ]; then
+  shift
 fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --yes)
+      YES=true
+      ;;
+    --add-skip|--add-limit|--change-status|--change-status-code|--all|--show-menu)
+      OPENAPI_OPTION="$1"
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 if [ -z "$SPEC_TYPE" ]; then
   echo "Which spec type should be demonstrated?"
@@ -30,23 +48,23 @@ fi
 
 case "$SPEC_TYPE" in
   openapi)
-    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-openapi.sh"
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/openapi_change.sh"
     TARGET="bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
     ;;
   graphql)
-    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-graphql.sh"
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/graphql_change.sh"
     TARGET="bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls"
     ;;
   grpc)
-    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-grpc.sh"
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/grpc_change.sh"
     TARGET="bcc-enterprise-demo/specs/baseline/grpc/warehouse.proto"
     ;;
   asyncapi)
-    CHANGE_SCRIPT="$DEMO_ROOT/scripts/change-asyncapi.sh"
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/asyncapi_change.sh"
     TARGET="bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml"
     ;;
   *)
-    echo "Usage: docker compose run --rm -it bcc [openapi|graphql|grpc|asyncapi] [--yes]" >&2
+    echo "Usage: ./scripts/run-bcc.sh [openapi|graphql|grpc|asyncapi] [OpenAPI change flag] [--yes]" >&2
     exit 2
     ;;
 esac
@@ -64,7 +82,13 @@ if ! git -C "$REPO_ROOT" ls-files --error-unmatch "$TARGET" >/dev/null 2>&1; the
 fi
 
 echo "Applying the $SPEC_TYPE breaking change..."
-sh "$CHANGE_SCRIPT"
+if [ "$SPEC_TYPE" = "openapi" ] && [ -n "$OPENAPI_OPTION" ]; then
+  sh "$CHANGE_SCRIPT" "$OPENAPI_OPTION"
+elif [ "$SPEC_TYPE" = "openapi" ] && [ "$YES" != true ]; then
+  sh "$CHANGE_SCRIPT" --show-menu
+else
+  sh "$CHANGE_SCRIPT"
+fi
 
 RUN_BCC=y
 if [ "$YES" != true ]; then
@@ -74,14 +98,14 @@ fi
 
 if [ "$RUN_BCC" = "n" ] || [ "$RUN_BCC" = "N" ]; then
   echo "Change left in the working tree."
-  echo "Run: docker compose run --rm --entrypoint specmatic bcc backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
+  echo "Run: docker compose -f $DEMO_ROOT/docker-compose.yml run --rm --entrypoint specmatic bcc backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
   echo "Clean up: docker compose run --rm --entrypoint sh bcc /workspace/bcc-enterprise-demo/scripts/cleanup.sh $SPEC_TYPE"
   exit 0
 fi
 
 echo
 echo "Running:"
-echo "specmatic backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
+echo "docker compose -f $DEMO_ROOT/docker-compose.yml run --rm --entrypoint specmatic bcc backward-compatibility-check --base-branch main --repo-dir /workspace --target-path $TARGET"
 echo
 
 # Remove reports from an earlier run so they cannot be mistaken for changed
@@ -89,10 +113,20 @@ echo
 rm -rf "$REPO_ROOT/build" "$DEMO_ROOT/build"
 
 set +e
-specmatic backward-compatibility-check \
-  --base-branch main \
-  --repo-dir "$REPO_ROOT" \
-  --target-path "$TARGET"
+if [ "${SPECMATIC_IN_CONTAINER:-false}" = "true" ]; then
+  specmatic backward-compatibility-check \
+    --base-branch main \
+    --repo-dir "$REPO_ROOT" \
+    --target-path "$TARGET"
+else
+  docker compose \
+    -f "$DEMO_ROOT/docker-compose.yml" \
+    run --rm --entrypoint specmatic bcc \
+    backward-compatibility-check \
+    --base-branch main \
+    --repo-dir /workspace \
+    --target-path "$TARGET"
+fi
 BCC_STATUS=$?
 set -e
 

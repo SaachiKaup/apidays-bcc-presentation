@@ -8,3 +8,4 @@ services:
       - ./license.txt:/specmatic/specmatic-license.txt:ro
     environment:
       SPECMATIC_LICENSE_PATH: /specmatic/specmatic-license.txt
+      SPECMATIC_IN_CONTAINER: "true"

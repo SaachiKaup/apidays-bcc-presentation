@@ -6,7 +6,7 @@ info:
 servers:
   production:
     host: events.example.test
-    protocol: kafka
+    protocol: Kafka
 channels:
   shipmentStatusChanged:
     address: shipment-status-changed
