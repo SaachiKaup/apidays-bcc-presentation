@@ -1,0 +1,157 @@
+# GitHub Actions CI Plan
+
+This plan adds a pull-request check for OpenAPI backward compatibility. The same approach can later be extended to GraphQL, gRPC, and AsyncAPI.
+
+## 1. Add the Enterprise license to GitHub
+
+In the GitHub repository:
+
+1. Open **Settings → Environments**.
+2. Create or open the environment named `SPECMATIC_LICENSE_ENV`.
+3. Under **Environment secrets**, select **Add secret**.
+4. Name it `SPECMATIC_LICENSE`.
+5. Paste the contents of the local `license.txt` file.
+6. Save the secret.
+
+Do not commit `license.txt`.
+
+## 2. Add the workflow
+
+Create `.github/workflows/bcc.yml` at the repository root.
+
+The workflow:
+
+- runs for pull requests that change specifications or the workflow;
+- checks out the full Git history;
+- creates the license file from the GitHub secret;
+- runs the Specmatic Enterprise Docker image;
+- compares the pull request with its target branch;
+- fails when the OpenAPI contract is incompatible.
+
+The important command is:
+
+```shell
+docker compose \
+  -f bcc-enterprise-demo/docker-compose.yml \
+  run --rm \
+  --entrypoint specmatic \
+  bcc \
+  backward-compatibility-check \
+  --base-branch origin/main \
+  --repo-dir /workspace \
+  --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+```
+
+## 3. Commit the workflow
+
+From the repository root:
+
+```shell
+git add .github/workflows/bcc.yml
+git commit -m "Add OpenAPI backward compatibility CI check"
+git push origin main
+```
+
+Confirm that the workflow appears under the repository's **Actions** tab.
+
+## 4. Create the failing CI example
+
+Create a branch:
+
+```shell
+git switch main
+git pull
+git switch -c demo-ci-limit
+```
+
+Apply the breaking change:
+
+```shell
+cd bcc-enterprise-demo
+./scripts/openapi_change.sh --add-limit
+git add specs/baseline/openapi/orders.yaml
+```
+
+For this intentional demonstration change, create the commit with:
+
+```shell
+git commit --no-verify -m "Demo: make order history limit mandatory"
+```
+
+Push the branch and open a pull request:
+
+```shell
+git push -u origin demo-ci-limit
+```
+
+Expected result:
+
+```text
+OpenAPI: INCOMPATIBLE
+CI CHECK FAILED
+```
+
+The pull request is stopped because the proposed contract breaks existing consumers.
+
+## 5. Create the passing CI example
+
+Create a fresh branch from `main`:
+
+```shell
+git switch main
+git pull
+git switch -c demo-ci-skip
+```
+
+Apply the compatible change:
+
+```shell
+cd bcc-enterprise-demo
+./scripts/openapi_change.sh --add-skip
+git add specs/baseline/openapi/orders.yaml
+git commit -m "Demo: add optional order history skip parameter"
+git push -u origin demo-ci-skip
+```
+
+Open a second pull request.
+
+Expected result:
+
+```text
+OpenAPI: COMPATIBLE
+CI CHECK PASSED
+```
+
+Show the two outcomes:
+
+```text
+mandatory limit → CI failed
+optional skip   → CI passed
+```
+
+## 6. Presentation narration
+
+> We ran the same BCC check locally and in the pull request. The only difference is the baseline: locally we compare with `main`; in CI we compare with the pull request's target branch. The same gate can later check GraphQL, gRPC, and AsyncAPI specifications as well.
+
+## 7. Clean up the demonstration
+
+After the presentation:
+
+```shell
+git switch main
+git branch -D demo-ci-limit
+git branch -D demo-ci-skip
+git push origin --delete demo-ci-limit
+git push origin --delete demo-ci-skip
+```
+
+Keep the workflow, the `SPECMATIC_LICENSE_ENV` environment, and its license secret in place. The local `license.txt` remains ignored.
+
+## Acceptance criteria
+
+- A pull request changing `limit` to mandatory fails.
+- A pull request adding optional `skip` passes.
+- The check runs through Docker.
+- The license is supplied through a GitHub secret.
+- The workflow compares against the pull request's base branch.
+- No local `license.txt` is committed.

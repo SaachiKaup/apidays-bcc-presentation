@@ -1,0 +1,39 @@
+name: Backward Compatibility
+
+on:
+  pull_request:
+    paths:
+      - "bcc-enterprise-demo/specs/**"
+      - "bcc-enterprise-demo/docker-compose.yml"
+      - ".github/workflows/bcc.yml"
+
+jobs:
+  openapi-bcc:
+    name: OpenAPI backward compatibility
+    runs-on: ubuntu-latest
+    environment: SPECMATIC_LICENSE_ENV
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Specmatic license file
+        env:
+          SPECMATIC_LICENSE: ${{ secrets.SPECMATIC_LICENSE }}
+        run: |
+          printf '%s' "$SPECMATIC_LICENSE" \
+            > bcc-enterprise-demo/license.txt
+
+      - name: Run OpenAPI BCC
+        run: |
+          docker compose \
+            -f bcc-enterprise-demo/docker-compose.yml \
+            run --rm \
+            --entrypoint specmatic \
+            bcc \
+            backward-compatibility-check \
+            --base-branch origin/${{ github.event.pull_request.base.ref }} \
+            --repo-dir /workspace \
+            --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
