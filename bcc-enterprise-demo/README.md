@@ -38,6 +38,7 @@ Or select a specification type directly:
 ./scripts/run-bcc.sh graphql
 ./scripts/run-bcc.sh grpc
 ./scripts/run-bcc.sh asyncapi
+./scripts/run-bcc.sh wip
 ```
 
 The flow is:
@@ -219,6 +220,35 @@ The reference files are:
 - `specs/compatible/openapi/orders.yaml` for optional pagination;
 - `specs/breaking/openapi/orders.yaml` for mandatory pagination and `404`→`422`.
 
+### WIP: review a breaking OpenAPI change before finalizing it
+
+Sometimes a team wants feedback on a breaking change while the contract is still being designed. The WIP scenario makes the same mandatory-`limit` change, but also adds a `WIP` tag to the affected `/orders` operation:
+
+```yaml
+get:
+  summary: List orders for a customer
+  tags:
+    - WIP
+  parameters:
+    - name: limit
+      in: query
+      required: true
+```
+
+Apply the WIP change directly:
+
+```shell
+./scripts/wip_change.sh
+```
+
+Run it through the complete BCC flow:
+
+```shell
+./scripts/run-bcc.sh wip
+```
+
+Specmatic still shows the compatibility finding, but treats the tagged operation as work in progress rather than failing the finalized-contract gate. Cleanup is offered after the check, just as it is for the other demonstrations.
+
 ### GraphQL: terminology standardization
 
 The customer portal is standardizing terminology. The change renames the `Order` field `customerName` to `buyerName`.
@@ -294,6 +324,7 @@ With no argument, all four baseline specifications are restored. To restore only
 ./scripts/cleanup.sh graphql
 ./scripts/cleanup.sh grpc
 ./scripts/cleanup.sh asyncapi
+./scripts/cleanup.sh wip
 ```
 
 The cleanup script restores only the selected baseline specification from `HEAD`. Do not use `git reset --hard HEAD~1`; that would affect the entire repository and remove the baseline commit.
@@ -310,6 +341,7 @@ bcc-enterprise-demo/
 │   ├── graphql_change.sh
 │   ├── grpc_change.sh
 │   ├── asyncapi_change.sh
+│   ├── wip_change.sh
 │   └── cleanup.sh
 └── specs/
     ├── baseline/

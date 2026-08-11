@@ -35,13 +35,15 @@ if [ -z "$SPEC_TYPE" ]; then
   echo "2) graphql"
   echo "3) grpc"
   echo "4) asyncapi"
-  printf "Choose 1-4: "
+  echo "5) wip (OpenAPI)"
+  printf "Choose 1-5: "
   read -r choice
   case "$choice" in
     1) SPEC_TYPE=openapi ;;
     2) SPEC_TYPE=graphql ;;
     3) SPEC_TYPE=grpc ;;
     4) SPEC_TYPE=asyncapi ;;
+    5) SPEC_TYPE=wip ;;
     *) echo "Invalid choice" >&2; exit 2 ;;
   esac
 fi
@@ -63,8 +65,12 @@ case "$SPEC_TYPE" in
     CHANGE_SCRIPT="$DEMO_ROOT/scripts/asyncapi_change.sh"
     TARGET="bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml"
     ;;
+  wip)
+    CHANGE_SCRIPT="$DEMO_ROOT/scripts/wip_change.sh"
+    TARGET="bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
+    ;;
   *)
-    echo "Usage: ./scripts/run-bcc.sh [openapi|graphql|grpc|asyncapi] [OpenAPI change flag] [--yes]" >&2
+    echo "Usage: ./scripts/run-bcc.sh [openapi|graphql|grpc|asyncapi|wip] [OpenAPI change flag] [--yes]" >&2
     exit 2
     ;;
 esac
@@ -110,7 +116,7 @@ echo
 
 # Remove reports from an earlier run so they cannot be mistaken for changed
 # specifications by the repository-wide compatibility check.
-rm -rf "$DEMO_ROOT/build"
+rm -rf "$REPO_ROOT/build" "$DEMO_ROOT/build"
 
 set +e
 if [ "${SPECMATIC_IN_CONTAINER:-false}" = "true" ]; then
@@ -129,6 +135,10 @@ else
 fi
 BCC_STATUS=$?
 set -e
+
+if [ -d "$REPO_ROOT/build" ]; then
+  mv "$REPO_ROOT/build" "$DEMO_ROOT/build"
+fi
 
 echo
 CLEANUP=y
