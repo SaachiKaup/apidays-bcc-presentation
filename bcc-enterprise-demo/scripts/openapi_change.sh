@@ -44,13 +44,15 @@ case "${1:-}" in
   ;;
 esac
 
-git -C "$ROOT" diff --quiet -- "$TARGET" || { echo "Target already changed: $TARGET" >&2; exit 1; }
-git -C "$ROOT" diff --cached --quiet -- "$TARGET" || { echo "Target is staged: $TARGET" >&2; exit 1; }
-
 add_parameter() {
   parameter_name=$1
   parameter_required=$2
   parameter_default=$3
+
+  if grep -q "^        - name: $parameter_name$" "$TARGET"; then
+    echo "OpenAPI: $parameter_name is already present; leaving it unchanged."
+    return 0
+  fi
 
   awk \
     -v parameter_name="$parameter_name" \
@@ -90,6 +92,16 @@ add_parameter() {
 }
 
 change_status() {
+  if grep -q "^        '422':$" "$TARGET"; then
+    echo "OpenAPI: status code is already 422; leaving it unchanged."
+    return 0
+  fi
+
+  if ! grep -q "^        '404':$" "$TARGET"; then
+    echo "Could not find the baseline 404 response." >&2
+    exit 1
+  fi
+
   if [ "$(uname -s)" = "Darwin" ]; then
     sed -i '' "s/^        '404':$/        '422':/" "$TARGET"
   else

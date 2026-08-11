@@ -13,7 +13,7 @@ The committed files under `specs/baseline/` are the trusted contracts. Each demo
 
 - Docker Desktop or Docker Engine with Compose v2.
 - A valid Specmatic Enterprise license in `license.txt`.
-- A clean target specification before starting a demonstration.
+- The specific change you want to demonstrate must not already be present in that specification.
 
 Run all commands from this directory:
 
@@ -22,6 +22,30 @@ cd bcc-enterprise-demo
 ```
 
 The license is mounted automatically from `./license.txt`. No host-installed Specmatic command or license environment variable is required.
+
+## Demonstrate the OpenAPI pre-commit flow
+
+Enable the shared hook once from the repository root:
+
+```shell
+git config core.hooksPath bcc-enterprise-demo/.githooks
+```
+
+Then run the guided sequence:
+
+```shell
+./scripts/pre-commit-changes.sh
+```
+
+The script follows the real Git flow:
+
+1. Apply and stage optional `skip`, then run `git commit`. The hook runs BCC and the commit succeeds with `COMPATIBLE`.
+2. Apply and stage mandatory `limit`, then run `git commit` again. The hook reports `INCOMPATIBLE` and blocks the commit.
+3. Choose whether to undo the compatible demonstration commit.
+
+The script does not run BCC separately and does not bypass the hook. During the hook,
+the staged OpenAPI specification is copied into an isolated temporary Git repository.
+This prevents Docker’s BCC process from conflicting with Git’s temporary commit lock.
 
 ## Run the demo
 
@@ -49,6 +73,14 @@ The flow is:
 4. Choose whether to run BCC.
 5. See the Docker command used for the BCC check.
 6. Choose whether to clean up the changed specification.
+
+The change scripts inspect only the section they are responsible for. For example,
+`--add-limit` refuses to add a second `limit` parameter, but it can run when `skip` or
+the status-code change is already present. This lets you layer the three OpenAPI examples
+without cleaning up between each one.
+
+The same behavior applies when using `run-bcc.sh`; it no longer rejects a specification
+just because another part of that file has already changed.
 
 To apply all changes and answer the run and cleanup prompts automatically:
 
@@ -311,7 +343,8 @@ Reference files:
 
 ## Manual cleanup
 
-If you decline cleanup, restore the selected file directly:
+Cleanup is optional when demonstrating separate changes. If you want to restore the
+specifications, use:
 
 ```shell
 ./scripts/cleanup.sh
@@ -335,8 +368,12 @@ The cleanup script restores only the selected baseline specification from `HEAD`
 bcc-enterprise-demo/
 ├── docker-compose.yml
 ├── license.txt                 # local, ignored by Git
+├── .githooks/
+│   └── pre-commit
 ├── scripts/
 │   ├── run-bcc.sh
+│   ├── precommit-openapi.sh
+│   ├── pre-commit-changes.sh
 │   ├── openapi_change.sh
 │   ├── graphql_change.sh
 │   ├── grpc_change.sh

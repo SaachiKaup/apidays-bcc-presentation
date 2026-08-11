@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eu
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+exec sh "$REPO_ROOT/bcc-enterprise-demo/scripts/precommit-openapi.sh"

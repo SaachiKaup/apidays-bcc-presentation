@@ -75,13 +75,6 @@ case "$SPEC_TYPE" in
     ;;
 esac
 
-if ! git -C "$REPO_ROOT" diff --quiet -- "$TARGET" || \
-   ! git -C "$REPO_ROOT" diff --cached --quiet -- "$TARGET"; then
-  echo "The target spec already has changes: $TARGET" >&2
-  echo "Clean it before starting another demonstration." >&2
-  exit 1
-fi
-
 if ! git -C "$REPO_ROOT" ls-files --error-unmatch "$TARGET" >/dev/null 2>&1; then
   echo "The baseline spec is not committed in the current Git branch: $TARGET" >&2
   exit 1

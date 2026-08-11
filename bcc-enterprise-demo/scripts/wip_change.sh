@@ -6,11 +6,14 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
 
-git -C "$ROOT" diff --quiet -- "$TARGET" || { echo "Target already changed: $TARGET" >&2; exit 1; }
-git -C "$ROOT" diff --cached --quiet -- "$TARGET" || { echo "Target is staged: $TARGET" >&2; exit 1; }
-
 # Apply the breaking pagination change first.
 sh "$SCRIPT_DIR/openapi_change.sh" --add-limit
+
+if grep -A3 -q '^      summary: List orders for a customer$' "$TARGET" && \
+   grep -A3 -q '^        - WIP$' "$TARGET"; then
+  echo "OpenAPI WIP: the order-history operation is already marked WIP; leaving it unchanged."
+  exit 0
+fi
 
 # Mark the affected operation as work in progress.
 awk '

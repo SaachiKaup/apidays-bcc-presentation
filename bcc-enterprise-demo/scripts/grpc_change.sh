@@ -6,8 +6,10 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/grpc/warehouse.proto"
 
-git -C "$ROOT" diff --quiet -- "$TARGET" || { echo "Target already changed: $TARGET" >&2; exit 1; }
-git -C "$ROOT" diff --cached --quiet -- "$TARGET" || { echo "Target is staged: $TARGET" >&2; exit 1; }
+if grep -q '^  string order_id = 1; // e.g. "EU-XYZ123"$' "$TARGET"; then
+  echo "gRPC: order_id is already a string; leaving it unchanged."
+  exit 0
+fi
 
 if ! grep -q '^  int64 order_id = 1;$' "$TARGET"; then
   echo "Expected the baseline Order.order_id field to be int64." >&2
