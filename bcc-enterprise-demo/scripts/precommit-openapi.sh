@@ -4,7 +4,7 @@ set -eu
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 DEMO_ROOT="$REPO_ROOT/bcc-enterprise-demo"
-TARGET="bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
+TARGET="bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml"
 
 # Do not run the check for unrelated commits.
 STAGED_TARGET=false

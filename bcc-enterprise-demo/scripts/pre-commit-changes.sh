@@ -10,36 +10,36 @@ cd "$DEMO_ROOT"
 DEMO_PARENT=$(git rev-parse HEAD)
 DEMO_COMMIT_CREATED=false
 
-printf "Apply and commit the optional skip parameter? [Y/n] "
+printf "Apply and commit the optional size parameter? [Y/n] "
 read -r answer
 case "$answer" in
   n|N|no|NO|No)
-    echo "Skipped optional skip parameter."
+    echo "Skipped optional size parameter."
     ;;
   *)
-    ./scripts/openapi_change.sh --add-skip
-    git add specs/baseline/openapi/orders.yaml
-    git commit -m "temp: added optional skip param"
+    ./scripts/customer_orders.sh --add-size
+    git add specs/baseline/openapi/customer_orders.yaml
+    git commit -m "temp: added optional order page size"
     DEMO_COMMIT_CREATED=true
     ;;
 esac
 
-printf "Apply and commit the mandatory limit parameter? [Y/n] "
+printf "Apply and commit the mandatory offset parameter? [Y/n] "
 read -r answer
 case "$answer" in
   n|N|no|NO|No)
-    echo "Skipped mandatory limit parameter."
+    echo "Skipped mandatory offset parameter."
     ;;
   *)
-    ./scripts/openapi_change.sh --add-limit
-    git add specs/baseline/openapi/orders.yaml
+    ./scripts/customer_orders.sh --add-offset
+    git add specs/baseline/openapi/customer_orders.yaml
     LIMIT_STATUS=0
-    git commit -m "temp: added mandatory limit param" || LIMIT_STATUS=$?
+    git commit -m "temp: added mandatory order offset" || LIMIT_STATUS=$?
     if [ "$LIMIT_STATUS" -eq 0 ]; then
-      echo "Unexpected result: the mandatory limit commit was allowed." >&2
+      echo "Unexpected result: the mandatory offset commit was allowed." >&2
       exit 1
     fi
-    echo "The mandatory limit commit was blocked by backward compatibility checking."
+    echo "The mandatory offset commit was blocked by backward compatibility checking."
     ;;
 esac
 

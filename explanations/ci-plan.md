@@ -1,6 +1,6 @@
 # GitHub Actions CI Plan
 
-This plan adds a pull-request check for OpenAPI backward compatibility. The same approach can later be extended to GraphQL, gRPC, and AsyncAPI.
+This plan adds a pull-request check for the unified customer-orders OpenAPI contract. The contract contains the pagination, naming, identifier, status, and error-response scenarios used in the demo.
 
 ## 1. Add the Enterprise license to GitHub
 
@@ -39,7 +39,7 @@ docker compose \
   backward-compatibility-check \
   --base-branch origin/main \
   --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+  --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
 ```
 
 ## 3. Commit the workflow
@@ -61,33 +61,33 @@ Create a branch:
 ```shell
 git switch main
 git pull
-git switch -c demo-ci-limit
+git switch -c demo-ci-offset
 ```
 
 Apply the breaking change:
 
 ```shell
 cd bcc-enterprise-demo
-./scripts/openapi_change.sh --add-limit
-git add specs/baseline/openapi/orders.yaml
+./scripts/customer_orders.sh --add-offset
+git add specs/baseline/openapi/customer_orders.yaml
 ```
 
 For this intentional demonstration change, create the commit with:
 
 ```shell
-git commit --no-verify -m "Demo: make order history limit mandatory"
+git commit --no-verify -m "Demo: make order offset mandatory"
 ```
 
 Push the branch and open a pull request:
 
 ```shell
-git push -u origin demo-ci-limit
+git push -u origin demo-ci-offset
 ```
 
 Expected result:
 
 ```text
-OpenAPI: INCOMPATIBLE
+Customer Orders: INCOMPATIBLE
 CI CHECK FAILED
 ```
 
@@ -107,10 +107,10 @@ Apply the compatible change:
 
 ```shell
 cd bcc-enterprise-demo
-./scripts/openapi_change.sh --add-skip
-git add specs/baseline/openapi/orders.yaml
-git commit -m "Demo: add optional order history skip parameter"
-git push -u origin demo-ci-skip
+./scripts/customer_orders.sh --add-size
+git add specs/baseline/openapi/customer_orders.yaml
+git commit -m "Demo: add optional order page size"
+git push -u origin demo-ci-size
 ```
 
 Open a second pull request.
@@ -125,13 +125,13 @@ CI CHECK PASSED
 Show the two outcomes:
 
 ```text
-mandatory limit → CI failed
-optional skip   → CI passed
+mandatory offset → CI failed
+optional size    → CI passed
 ```
 
 ## 6. Presentation narration
 
-> We ran the same BCC check locally and in the pull request. The only difference is the baseline: locally we compare with `main`; in CI we compare with the pull request's target branch. The same gate can later check GraphQL, gRPC, and AsyncAPI specifications as well.
+> We ran the same BCC check locally and in the pull request. The only difference is the baseline: locally we compare with `main`; in CI we compare with the pull request's target branch. The one customer-orders contract lets us show several compatibility surfaces without switching demos.
 
 ## 7. Clean up the demonstration
 
@@ -139,18 +139,18 @@ After the presentation:
 
 ```shell
 git switch main
-git branch -D demo-ci-limit
-git branch -D demo-ci-skip
-git push origin --delete demo-ci-limit
-git push origin --delete demo-ci-skip
+git branch -D demo-ci-offset
+git branch -D demo-ci-size
+git push origin --delete demo-ci-offset
+git push origin --delete demo-ci-size
 ```
 
 Keep the workflow, the `SPECMATIC_LICENSE_ENV` environment, and its license secret in place. The local `license.txt` remains ignored.
 
 ## Acceptance criteria
 
-- A pull request changing `limit` to mandatory fails.
-- A pull request adding optional `skip` passes.
+- A pull request changing `offset` to mandatory fails.
+- A pull request adding optional `size` passes.
 - The check runs through Docker.
 - The license is supplied through a GitHub secret.
 - The workflow compares against the pull request's base branch.

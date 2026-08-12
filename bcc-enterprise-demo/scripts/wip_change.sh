@@ -4,10 +4,10 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
-TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/openapi/orders.yaml"
+TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml"
 
 # Apply the breaking pagination change first.
-sh "$SCRIPT_DIR/openapi_change.sh" --add-limit
+sh "$SCRIPT_DIR/customer_orders.sh" --add-offset
 
 if grep -A3 -q '^      summary: List orders for a customer$' "$TARGET" && \
    grep -A3 -q '^        - WIP$' "$TARGET"; then
@@ -33,4 +33,4 @@ if ! grep -A2 -q '^      summary: List orders for a customer$' "$TARGET" || \
   exit 1
 fi
 
-echo "Changed OpenAPI WIP scenario: limit is mandatory and the order-history operation is tagged WIP."
+echo "Changed Customer Orders WIP scenario: offset is mandatory and the order-history operation is tagged WIP."

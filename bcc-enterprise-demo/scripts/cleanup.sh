@@ -13,13 +13,14 @@ restore_spec() {
 
 case "${1:-}" in
   "")
+    restore_spec bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
     restore_spec bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
     restore_spec bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls
     restore_spec bcc-enterprise-demo/specs/baseline/grpc/warehouse.proto
     restore_spec bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml
     ;;
-  openapi)
-    restore_spec bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+  customer-orders|customer_orders|openapi)
+    restore_spec bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
     ;;
   graphql)
     restore_spec bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls
@@ -31,7 +32,7 @@ case "${1:-}" in
     restore_spec bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml
     ;;
   wip)
-    restore_spec bcc-enterprise-demo/specs/baseline/openapi/orders.yaml
+    restore_spec bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
     ;;
   *)
     echo "Usage: cleanup.sh [openapi|graphql|grpc|asyncapi|wip]" >&2
