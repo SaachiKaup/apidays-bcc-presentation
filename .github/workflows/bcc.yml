@@ -9,9 +9,10 @@ on:
 
 jobs:
   openapi-bcc:
-    name: OpenAPI backward compatibility
+    name: BCC / OpenAPI baseline
     runs-on: ubuntu-latest
-    environment: SPECMATIC_LICENSE_ENV
+    permissions:
+      contents: read
 
     steps:
       - name: Check out repository
@@ -25,22 +26,12 @@ jobs:
             "refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
           git rev-parse "origin/${{ github.event.pull_request.base.ref }}"
 
-      - name: Create Specmatic license file
-        env:
-          SPECMATIC_LICENSE: ${{ secrets.SPECMATIC_LICENSE }}
-        run: |
-          printf '%s' "$SPECMATIC_LICENSE" \
-            > bcc-enterprise-demo/license.txt
-
       - name: Run OpenAPI BCC
         run: |
           docker run --rm \
-            -v "$PWD:/workspace" \
-            -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
-            -w /workspace \
-            -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
-            specmatic/enterprise:latest \
+            -v "${PWD}:/usr/src/app" \
+            -w /usr/src/app \
+            specmatic/specmatic:demo \
             backward-compatibility-check \
             --base-branch origin/${{ github.event.pull_request.base.ref }} \
-            --repo-dir /workspace \
-            --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
+            --target-path bcc-enterprise-demo/specs/baseline/openapi

@@ -325,7 +325,27 @@ No compatible variants are required for these three short demonstrations.
 
 ## CI merge protection
 
-The GitHub Actions workflow runs BCC for OpenAPI pull requests. A breaking change such as mandatory `offset`, `201 → 202`, UUID migration, or replacing `status` must produce `INCOMPATIBLE` and a non-zero workflow exit, blocking the merge until the provider redesigns or versions the change.
+The GitHub Actions workflow runs BCC for OpenAPI pull requests using the same Docker command shown above:
+
+```shell
+docker run --rm -v ${PWD}:/usr/src/app \
+  specmatic/specmatic:demo backward-compatibility-check \
+  --base-branch origin/main \
+  --target-path bcc-enterprise-demo/specs/baseline/openapi
+```
+
+The workflow fails when BCC returns a non-zero exit code. A breaking change such as mandatory `offset`, `201 → 202`, UUID migration, or replacing `status` therefore appears as a failed check.
+
+To make that failed check prevent merging, configure GitHub branch protection:
+
+1. Open **Settings → Branches → Branch protection rules**.
+2. Add a rule for `main`.
+3. Enable **Require a pull request before merging**.
+4. Enable **Require status checks to pass before merging**.
+5. Search for and select `BCC / OpenAPI baseline`.
+6. Save the rule.
+
+After this, a pull request with an incompatible baseline spec cannot be merged until the change is redesigned, versioned, or otherwise resolved.
 
 ## Cleanup
 
