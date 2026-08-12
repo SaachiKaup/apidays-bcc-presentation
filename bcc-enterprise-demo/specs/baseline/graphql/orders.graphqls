@@ -18,8 +18,6 @@ type Order {
   customerName: String!
   status: OrderStatus!
   deliveryDate: DateTime
-  # DEMO — breaking: uncomment to require a date for every order.
-  # deliveryDate: DateTime!
   total: Money!
 }
 

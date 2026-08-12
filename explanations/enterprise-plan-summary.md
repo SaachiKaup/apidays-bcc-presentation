@@ -24,7 +24,7 @@ Each change solves a real problem. The risk is that existing consumers still dep
 | Contract | Business need | Proposed evolution |
 |---|---|---|
 | OpenAPI | Support larger order histories and standardize errors | Add optional `skip`/`limit`; make `limit` mandatory **and** change `404` to `422` |
-| GraphQL | Standardize customer terminology | Rename `customerName` to `buyerName`; existing queries would fail |
+| GraphQL | Require the customer portal to filter orders by status | Make the existing optional `status` argument mandatory; older queries may omit it |
 | gRPC | Support international warehouse IDs | Change `orderId` from an integer to a string; existing generated clients may break |
 | AsyncAPI | Provide richer status information to shipping partners | Change `status` from a string to a structured object; existing event consumers may fail |
 

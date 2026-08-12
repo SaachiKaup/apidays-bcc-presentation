@@ -291,9 +291,9 @@ These are intentionally brief. Show the baseline, state the provider motivation,
 
 ### GraphQL
 
-The provider wants every order to display a delivery date. Older orders may not have one, so changing `deliveryDate` from nullable to non-null is breaking.
+The customer portal wants to filter orders by status. The provider makes the existing `status` argument mandatory, assuming every client can now provide it. Older queries may omit it, so they no longer match the schema.
 
-In `specs/baseline/graphql/orders.graphqls`, replace the active field with the commented `DateTime!` field.
+In `specs/baseline/graphql/orders.graphqls`, replace the active `orders` field with the commented version that uses `status: OrderStatus!`.
 
 ```shell
 ./scripts/run-pre-canned.sh graphql
