@@ -6,6 +6,16 @@ The provider is considering several reasonable changes. The question is whether 
 
 OpenAPI is the detailed demonstration. GraphQL, gRPC, and AsyncAPI are short pre-canned demonstrations showing that the same BCC capability applies to other specification types.
 
+## Why start with backward compatibility?
+
+> If changing a web API response can make more than one in three mobile applications fail, how do we know which consumers are safe before we release?
+
+An earlier study of 43 mobile applications found failures in more than 30% of observed cases when a web API response changed. A 2024 study of 681 open-source Android applications found an average of two API field compatibility issues per application in each release snapshot, and that fixing one took about three and a half months on average. Method-level analysis could also miss many field-level compatibility issues.
+
+These studies measure different things: consumer failures in the first case, and field-level issues and repair time in the second. Together, they show why compatibility needs to be checked before release.
+
+Sources: [mobile API response study](https://link.springer.com/article/10.1007/s10664-019-09713-w) and [2024 Android API field study](https://doi.org/10.1016/j.infsof.2024.107530).
+
 ## Prerequisites
 
 - Docker Desktop or Docker Engine;
@@ -41,7 +51,13 @@ In `specs/baseline/openapi/customer_orders.yaml`, uncomment the `size` block mar
     default: 20
 ```
 
-#### Make `offset` mandatory — INCOMPATIBLE
+Alternative command:
+
+```shell
+./scripts/customer_orders.sh --add-size
+```
+
+#### Make `offset` mandatory
 
 The provider may later decide that every request must explicitly state its position in the result set. Existing clients do not send `offset`, so their requests become invalid.
 
@@ -56,6 +72,12 @@ Replace the active pagination parameter area with the commented `offset` block m
     minimum: 0
 ```
 
+Alternative command:
+
+```shell
+./scripts/customer_orders.sh --add-offset
+```
+
 The lesson is that adding an optional parameter is safe, while making a new parameter mandatory breaks existing requests.
 
 ### 2. Move order creation from synchronous to asynchronous
@@ -68,19 +90,24 @@ The provider changes:
 201 Created → 202 Accepted
 ```
 
-The response can also include a monitor link so the client can check progress:
+The `202` response points the client to a monitor resource through the `Link` header, following the convention used in the Specmatic labs:
 
-```json
-{
-  "monitorUrl": "/orders/requests/abc-123"
-}
+```http
+HTTP/1.1 202 Accepted
+Link: </monitor/abc-123>;rel=related;title=monitor
 ```
 
 Existing consumers may interpret `201` as “the order has been created.” Changing it to `202` changes that contract and is therefore breaking.
 
-For the manual demo, remove the active `201` response block and uncomment the `202` block marked **DEMO 3**.
+For the manual demo, comment out the active `201` response block and uncomment the `202` response marked **DEMO 3**. The asynchronous response does not pretend that the order is already complete; it returns an inline `Link` header that points to the monitor resource.
 
-Safe resolution options include preserving the existing `201` endpoint, introducing a new asynchronous endpoint, or versioning the API. A new optional monitor link can be added without changing existing consumers.
+Alternative command:
+
+```shell
+./scripts/customer_orders.sh --async-create
+```
+
+The compatible design keeps `POST /orders` and its existing `201` response, then adds `202` as another possible response with a monitor link to `GET /monitor/{id}`. Existing consumers can continue using `201`; new consumers can opt into the asynchronous behavior.
 
 ### 3. Move from numeric IDs to UUIDs — INCOMPATIBLE
 
@@ -97,6 +124,12 @@ example: 550e8400-e29b-41d4-a716-446655440000
 Typed clients, databases, and integrations that expect an integer will no longer work. This is a deliberate breaking change to push through by introducing a new API version or a new identifier field and migrating consumers gradually.
 
 The compatible design preserves the numeric ID and adds an optional UUID field such as `globalOrderId`.
+
+Alternative command for the breaking change:
+
+```shell
+./scripts/customer_orders.sh --uuid-order-id
+```
 
 ### 4. Provide granular order updates
 
@@ -115,6 +148,12 @@ status:
     $ref: '#/components/schemas/OrderUpdate'
 ```
 
+Alternative command:
+
+```shell
+./scripts/customer_orders.sh --replace-status
+```
+
 #### Preserve `status` and add `updates` — COMPATIBLE
 
 The safe design keeps the existing status and adds a new optional field for the richer information. Uncomment both the `updates` field and the `OrderUpdate` schema marked **DEMO 6**.
@@ -130,6 +169,44 @@ updates:
 ```
 
 Existing consumers continue reading `status`; newer consumers can use `updates`.
+
+Alternative command:
+
+```shell
+./scripts/customer_orders.sh --add-updates
+```
+
+## Introducing a deliberate breaking change with a new API version
+
+BCC protects existing consumers of the current API. It does not prevent the provider from making a breaking change when there is a real business reason; it makes the change visible so the provider can introduce it deliberately.
+
+For example, use a new API version for the UUID migration or the asynchronous order-creation flow:
+
+1. Keep the current contract unchanged as v1.
+2. Copy the contract to a new versioned location, such as:
+
+   ```text
+   specs/v2/openapi/customer_orders.yaml
+   ```
+
+3. Update the new contract's `info.version`, for example from `1.0.0` to `2.0.0`.
+4. Give the new API a distinct public route or server version, such as `/v2/orders` or `https://orders.example.test/v2`.
+5. Make the breaking change only in v2: change `201` to `202`, change numeric IDs to UUIDs, or replace the status shape.
+6. Keep v1 available while existing consumers migrate.
+7. Run BCC separately against v2's intended baseline. The v2 baseline should be the contract that v2 consumers already depend on; do not compare a new v2 contract directly with an unrelated v1 contract and expect the breaking change to disappear.
+8. Update consumers gradually, publish the migration guidance, and remove v1 only after the agreed deprecation period.
+
+The version number in `info.version` documents the release, but it does not by itself make a breaking change safe. Compatibility comes from keeping the old version available or introducing a new contract boundary. Specmatic's BCC check should still run for each versioned contract and in CI.
+
+For this demo, the prepared files illustrate the two sides:
+
+```text
+specs/baseline/openapi/customer_orders.yaml    current v1 contract
+specs/breaking/openapi/customer_orders.yaml    proposed breaking release
+specs/compatible/openapi/customer_orders.yaml  safe evolution of v1
+```
+
+The BCC command compares a changed contract with its Git baseline using `--base-branch`, and `--target-path` limits the check to the contract being demonstrated. See the [Specmatic backward compatibility documentation](https://docs.specmatic.io/contract_driven_development/backward_compatibility) for the workflow and command options.
 
 ## Practice the OpenAPI changes manually
 

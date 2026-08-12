@@ -76,8 +76,21 @@ change_async_response() {
   edit '
     /^  \/orders:$/ { in_orders=1 }
     /^  \/orders\/\{orderId\}:$/ { in_orders=0 }
-    in_orders && /^        '\''201'\'':$/ { sub("201", "202"); print; next }
-    in_orders && /description: Order created$/ { sub("Order created", "Order accepted for background creation") }
+    in_orders && /^        '\''201'\'':$/ {
+      print "        '\''202'\'':"
+      print "          description: Order accepted and queued for background creation"
+      print "          headers:"
+      print "            Link:"
+      print "              description: Link used to monitor order-creation progress"
+      print "              schema:"
+      print "                type: string"
+      print "                description: Monitor link to check order-creation status"
+      print "                example: </monitor/abc-123>;rel=related;title=monitor"
+      skip_response=1
+      next
+    }
+    skip_response && /^  \/orders\/\{orderId\}:$/ { skip_response=0 }
+    skip_response { next }
     { print }
   '
   echo "Changed Customer Orders: POST /orders now returns 202 Accepted."

@@ -48,6 +48,30 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Order' }
+        '202':
+          description: Order accepted and queued for background creation
+          headers:
+            Link:
+              description: Link used to monitor order-creation progress
+              schema:
+                type: string
+                description: Monitor link to check order-creation status
+                example: </monitor/abc-123>;rel=related;title=monitor
+  /monitor/{id}:
+    get:
+      operationId: getOrderCreationStatus
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Current order-creation request status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: {type: string, enum: [ACCEPTED, PROCESSING, COMPLETED, FAILED]}
   /orders/{orderId}:
     get:
       operationId: getOrder

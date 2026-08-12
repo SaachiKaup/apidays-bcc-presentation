@@ -54,19 +54,23 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateOrderRequest'
       responses:
+        # DEMO 3 — breaking: comment out the active 201 block, then uncomment
         '201':
           description: Order created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-        # DEMO 3 — breaking: remove the active 201 block and uncomment 202.
-        #'202':
-        #  description: Order accepted for background creation
-        #  content:
-        #    application/json:
-        #      schema:
-        #        $ref: '#/components/schemas/Order'
+        # this 202 response with its monitor link.
+#        '202':
+#          description: Order accepted and queued for background creation
+#          headers:
+#            Link:
+#              description: Link used to monitor order-creation progress
+#              schema:
+#                type: string
+#                description: Monitor link to check order-creation status
+#                example: </monitor/abc-123>;rel=related;title=monitor
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -119,15 +123,15 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    # DEMO 4 — breaking: replace the active OrderId definition with this UUID version.
     OrderId:
       type: integer
       format: int64
       example: 202600123
-    # DEMO 4 — breaking: replace the active OrderId definition with this UUID version.
-    #OrderId:
-    #  type: string
-    #  format: uuid
-    #  example: 550e8400-e29b-41d4-a716-446655440000
+#    OrderId:
+#      type: string
+#      format: uuid
+#      example: 550e8400-e29b-41d4-a716-446655440000
     CreateOrderRequest:
       type: object
       required: [customerId, total]
