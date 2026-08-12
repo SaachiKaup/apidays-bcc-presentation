@@ -38,5 +38,18 @@ components:
         status:
           type: string
           enum: [PACKED, SHIPPED, DELIVERED, RETURNED]
+        # DEMO — breaking: replace the active string status with this object.
+        #status:
+        #  type: object
+        #  required: [code, reason, updatedAt]
+        #  properties:
+        #    code:
+        #      type: string
+        #      enum: [PACKED, SHIPPED, DELIVERED, RETURNED]
+        #    reason:
+        #      type: string
+        #    updatedAt:
+        #      type: string
+        #      format: date-time
         trackingNumber:
           type: string

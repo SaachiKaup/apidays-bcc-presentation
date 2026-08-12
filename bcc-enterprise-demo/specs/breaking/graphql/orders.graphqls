@@ -15,10 +15,9 @@ type Money {
 
 type Order {
   id: ID!
-  buyerName: String!
+  customerName: String!
   status: OrderStatus!
-  deliveryDate: DateTime
-  estimatedDelivery: DateTime
+  deliveryDate: DateTime!
   total: Money!
 }
 

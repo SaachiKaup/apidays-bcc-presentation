@@ -22,6 +22,7 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
+        # DEMO 1 — compatible: uncomment this optional size parameter.
         #- name: size
         #  in: query
         #  required: false
@@ -29,12 +30,13 @@ paths:
         #    type: integer
         #    minimum: 1
         #    default: 20
-        - name: offset
-          in: query
-          required: true
-          schema:
-            type: integer
-            minimum: 0
+        # DEMO 2 — breaking: uncomment this mandatory offset parameter.
+        #- name: offset
+        #  in: query
+        #  required: true
+        #  schema:
+        #    type: integer
+        #    minimum: 0
       responses:
         '200':
           description: Orders
@@ -42,6 +44,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderList'
+    post:
+      operationId: createOrder
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        # DEMO 3 — breaking: remove the active 201 block and uncomment 202.
+        #'202':
+        #  description: Order accepted for background creation
+        #  content:
+        #    application/json:
+        #      schema:
+        #        $ref: '#/components/schemas/Order'
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -57,8 +82,6 @@ paths:
                 $ref: '#/components/schemas/Order'
         '404':
           $ref: '#/components/responses/OrderNotFound'
-        #'422':
-        #  $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /client_orders:
@@ -100,9 +123,20 @@ components:
       type: integer
       format: int64
       example: 202600123
+    # DEMO 4 — breaking: replace the active OrderId definition with this UUID version.
     #OrderId:
     #  type: string
-    #  example: EU-XYZ123
+    #  format: uuid
+    #  example: 550e8400-e29b-41d4-a716-446655440000
+    CreateOrderRequest:
+      type: object
+      required: [customerId, total]
+      properties:
+        customerId:
+          type: string
+        total:
+          type: number
+          format: double
     OrderList:
       type: array
       items:
@@ -117,6 +151,11 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/OrderStatus'
+        # DEMO 6 — compatible: preserve status and uncomment updates plus its schema below.
+        #updates:
+        #  type: array
+        #  items:
+        #    $ref: '#/components/schemas/OrderUpdate'
         total:
           type: number
           format: double
@@ -125,19 +164,27 @@ components:
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      #required: [code, reason, updatedAt]
-      #properties:
-      #  code:
-      #    type: string
-      #    enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-      #  reason:
-      #    type: string
-      #  updatedAt:
-      #    type: string
-      #    format: date-time
+    # DEMO 5 — breaking: replace the active string status definition with this array.
+    #OrderStatus:
+    #  type: array
+    #  items:
+    #    $ref: '#/components/schemas/OrderUpdate'
     OrderStatusCode:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+    # DEMO 6 — compatible: uncomment this reusable update schema with the updates field above.
+    #OrderUpdate:
+    #  type: object
+    #  required: [updatedAt, reason]
+    #  properties:
+    #    code:
+    #      type: string
+    #      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+    #    reason:
+    #      type: string
+    #    updatedAt:
+    #      type: string
+    #      format: date-time
     Problem:
       type: object
       required: [code, message]

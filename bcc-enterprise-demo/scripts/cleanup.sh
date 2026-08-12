@@ -31,11 +31,8 @@ case "${1:-}" in
   asyncapi)
     restore_spec bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml
     ;;
-  wip)
-    restore_spec bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
-    ;;
   *)
-    echo "Usage: cleanup.sh [openapi|graphql|grpc|asyncapi|wip]" >&2
+    echo "Usage: cleanup.sh [customer-orders|graphql|grpc|asyncapi]" >&2
     exit 2
     ;;
 esac

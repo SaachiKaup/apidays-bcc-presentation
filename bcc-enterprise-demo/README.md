@@ -1,60 +1,35 @@
-# Enterprise BCC Demo
+# Enterprise Backward Compatibility Demo
 
-This demo uses one OpenAPI contract, `specs/baseline/openapi/customer_orders.yaml`,
-to show several enterprise changes and their backward-compatibility results.
-The older GraphQL, gRPC, and AsyncAPI files remain as reference material; the
-live demo uses only this customer-orders contract.
+You are a product shipping company. Your customer base has been steadily expanding, increasing the load on your systems. You want to redesign the platform to handle that load, reduce failures, and provide customers with granular order updates instead of only a single status.
+
+The provider is considering several reasonable changes. The question is whether existing consumers will continue to work when the contract changes.
+
+OpenAPI is the detailed demonstration. GraphQL, gRPC, and AsyncAPI are short pre-canned demonstrations showing that the same BCC capability applies to other specification types.
 
 ## Prerequisites
 
-- Docker Desktop or Docker Engine with Compose v2;
-- a valid Specmatic Enterprise license in `license.txt`.
+- Docker Desktop or Docker Engine;
+- a Specmatic Enterprise license in `license.txt`.
 
-Run commands from this directory:
+Run from the repository root unless a command says otherwise:
 
 ```shell
 cd bcc-enterprise-demo
 ```
 
-## Run the menu
+## The provider's proposed changes
 
-```shell
-./scripts/customer_orders.sh
-```
+### 1. Paginate the order history
 
-The menu offers:
+Customers have an increasing number of orders. The provider wants clients to retrieve the order history in manageable pages using `size` and `offset`.
 
-```text
-1) Add optional size — larger result sets need client-controlled page size (COMPATIBLE)
-2) Make offset mandatory — every request must declare its page position (INCOMPATIBLE)
-3) Change 404 to 422 — standardize order-not-found handling (INCOMPATIBLE)
-4) Change numeric IDs to global string IDs — support international identifiers (INCOMPATIBLE)
-5) Make status a richer object — expose code, reason, and update time (INCOMPATIBLE)
-6) Apply all five changes
-```
+The important question is not whether pagination is useful. It is whether the new parameters are required.
 
-Direct options are also available:
+#### Add optional `size` — COMPATIBLE
 
-```shell
-./scripts/customer_orders.sh --add-size
-./scripts/customer_orders.sh --add-offset
-./scripts/customer_orders.sh --change-status
-./scripts/customer_orders.sh --global-id
-./scripts/customer_orders.sh --richer-status
-```
+An optional `size` lets new clients control the number of orders returned. Existing requests do not need to change.
 
-The complete change, BCC, and cleanup flow is:
-
-```shell
-./scripts/run-bcc.sh customer-orders --add-offset
-```
-
-## Why each change is proposed
-
-### Optional `size` — compatible
-
-Order history is growing. Clients want to control the number of orders returned
-per request, but existing clients should continue to work.
+In `specs/baseline/openapi/customer_orders.yaml`, uncomment the `size` block marked **DEMO 1** under `GET /orders`.
 
 ```yaml
 - name: size
@@ -66,12 +41,11 @@ per request, but existing clients should continue to work.
     default: 20
 ```
 
-Because it is optional, existing requests remain valid: `COMPATIBLE`.
+#### Make `offset` mandatory — INCOMPATIBLE
 
-### Mandatory `offset` — incompatible
+The provider may later decide that every request must explicitly state its position in the result set. Existing clients do not send `offset`, so their requests become invalid.
 
-The team wants every request to declare its position in a large result set.
-Existing clients do not send `offset`, so their old requests become invalid.
+Replace the active pagination parameter area with the commented `offset` block marked **DEMO 2**.
 
 ```yaml
 - name: offset
@@ -82,128 +56,183 @@ Existing clients do not send `offset`, so their old requests become invalid.
     minimum: 0
 ```
 
-Result: `INCOMPATIBLE`.
+The lesson is that adding an optional parameter is safe, while making a new parameter mandatory breaks existing requests.
 
-### `404` to `422` — incompatible
+### 2. Move order creation from synchronous to asynchronous
 
-The platform is standardizing how clients interpret missing-order responses.
-Status codes are part of the contract even when the response payload is not
-changed.
+The provider wants to acknowledge an order immediately and create it in the background. This reduces the time a customer waits for the creation request and helps the system absorb higher load.
 
-```yaml
-# Existing
-'404':
-  $ref: '#/components/responses/OrderNotFound'
+The provider changes:
 
-# Proposed
-'422':
-  $ref: '#/components/responses/OrderNotFound'
+```text
+201 Created → 202 Accepted
 ```
 
-Result: `INCOMPATIBLE` for clients that branch on `404`.
-
-### Numeric ID to global string ID — incompatible
-
-International expansion requires IDs such as `EU-XYZ123`, which cannot be
-represented as integers.
-
-```yaml
-# Existing
-id:
-  type: integer
-  example: 202600123
-
-# Proposed
-id:
-  type: string
-  example: EU-XYZ123
-```
-
-Result: `INCOMPATIBLE` for typed consumers expecting a number.
-
-### Plain status to richer status object — incompatible
-
-The company is integrating multiple carriers. `SHIPPED` alone is not enough
-for tracking and support; they also need the reason and timestamp.
+The response can also include a monitor link so the client can check progress:
 
 ```json
-// Existing
-"status": "SHIPPED"
-
-// Proposed
-"status": {
-  "code": "SHIPPED",
-  "reason": "Carrier picked up the package",
-  "updatedAt": "2026-08-10T12:00:00Z"
+{
+  "monitorUrl": "/orders/requests/abc-123"
 }
 ```
 
-The object groups the values that describe one status event. Existing consumers
-expecting a string now receive an object: `INCOMPATIBLE`.
+Existing consumers may interpret `201` as “the order has been created.” Changing it to `202` changes that contract and is therefore breaking.
 
-## Compatible remediation examples
+For the manual demo, remove the active `201` response block and uncomment the `202` block marked **DEMO 3**.
 
-The prepared references show how to deliver the same business goals safely:
+Safe resolution options include preserving the existing `201` endpoint, introducing a new asynchronous endpoint, or versioning the API. A new optional monitor link can be added without changing existing consumers.
 
-```text
-specs/baseline/openapi/customer_orders.yaml    trusted contract
-specs/breaking/openapi/customer_orders.yaml   proposed breaking release
-specs/compatible/openapi/customer_orders.yaml safe redesign
+### 3. Move from numeric IDs to UUIDs — INCOMPATIBLE
+
+As the customer base grows internationally, the provider wants an identifier system that is globally unique and easier to allocate across regions. Existing consumers currently expect numeric order IDs.
+
+Replace the active `OrderId` schema with the commented UUID version marked **DEMO 4**:
+
+```yaml
+type: string
+format: uuid
+example: 550e8400-e29b-41d4-a716-446655440000
 ```
 
-The compatible version:
+Typed clients, databases, and integrations that expect an integer will no longer work. This is a deliberate breaking change to push through by introducing a new API version or a new identifier field and migrating consumers gradually.
 
-- keeps `offset` optional and gives it a default;
-- keeps `404` and adds `422` separately;
-- keeps numeric `id` and adds optional `internationalId`;
-- keeps string `status` and adds optional `statusDetails`.
+The compatible design preserves the numeric ID and adds an optional UUID field such as `globalOrderId`.
 
-## Run BCC manually
+### 4. Provide granular order updates
 
-From the repository root, run:
+Customers and support teams need more than `SHIPPED`. They want updates such as `LEFT_WAREHOUSE`, a timestamp, and an operational explanation such as “Left the Bengaluru warehouse.”
+
+#### Replace `status` with update history — INCOMPATIBLE
+
+Replacing the existing string status with an array changes the payload shape. Existing consumers that read `status` as a string will fail.
+
+Replace the active `OrderStatus` schema with the commented array marked **DEMO 5**:
+
+```yaml
+status:
+  type: array
+  items:
+    $ref: '#/components/schemas/OrderUpdate'
+```
+
+#### Preserve `status` and add `updates` — COMPATIBLE
+
+The safe design keeps the existing status and adds a new optional field for the richer information. Uncomment both the `updates` field and the `OrderUpdate` schema marked **DEMO 6**.
+
+```yaml
+status:
+  type: string
+
+updates:
+  type: array
+  items:
+    $ref: '#/components/schemas/OrderUpdate'
+```
+
+Existing consumers continue reading `status`; newer consumers can use `updates`.
+
+## Practice the OpenAPI changes manually
+
+The baseline file contains commented examples. For each exercise:
+
+1. Start from the committed baseline.
+2. Uncomment only the block for the exercise.
+3. If the comment says “replace,” comment out the current active definition first.
+4. Run BCC.
+5. Inspect the result and the generated report.
+6. Restore the baseline before the next exercise.
+
+The helper can apply the equivalent changes automatically, but it is not required for the demo:
 
 ```shell
-docker compose -f bcc-enterprise-demo/docker-compose.yml \
-  run --rm --entrypoint specmatic bcc \
+./scripts/customer_orders.sh --add-size
+./scripts/customer_orders.sh --add-offset
+./scripts/customer_orders.sh --async-create
+./scripts/customer_orders.sh --uuid-order-id
+./scripts/customer_orders.sh --replace-status
+./scripts/customer_orders.sh --add-updates
+```
+
+## Run BCC with Docker
+
+From the repository root:
+
+```shell
+docker run --rm \
+  -v "$PWD:/workspace" \
+  -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
+  -w /workspace \
+  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
+  specmatic/enterprise:latest \
   backward-compatibility-check \
   --base-branch main \
   --repo-dir /workspace \
   --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
 ```
 
-Reports are written to `bcc-enterprise-demo/build/`.
+The same command is available through:
+
+```shell
+./bcc-enterprise-demo/scripts/specmatic-bcc.sh \
+  bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
+```
+
+Reports are written to `build/reports/specmatic/backward_compatibility/`.
+
+## Pre-canned demos for other specification types
+
+These are intentionally brief. Show the baseline, state the provider motivation, uncomment the commented change in the baseline file, and run the command.
+
+### GraphQL
+
+The provider wants every order to display a delivery date. Older orders may not have one, so changing `deliveryDate` from nullable to non-null is breaking.
+
+In `specs/baseline/graphql/orders.graphqls`, replace the active field with the commented `DateTime!` field.
+
+```shell
+./scripts/run-pre-canned.sh graphql
+```
+
+Expected result: `INCOMPATIBLE`.
+
+### gRPC
+
+The provider wants globally unique order IDs. In `specs/baseline/grpc/warehouse.proto`, replace `int64 order_id` with the commented string field.
+
+```shell
+./scripts/run-pre-canned.sh grpc
+```
+
+Expected result: `INCOMPATIBLE`.
+
+### AsyncAPI
+
+The provider wants shipping consumers to receive a status code, reason, and timestamp. In `specs/baseline/asyncapi/shipping-events.yaml`, replace the string `status` with the commented object.
+
+```shell
+./scripts/run-pre-canned.sh asyncapi
+```
+
+Expected result: `INCOMPATIBLE`.
+
+No compatible variants are required for these three short demonstrations.
+
+## CI merge protection
+
+The GitHub Actions workflow runs BCC for OpenAPI pull requests. A breaking change such as mandatory `offset`, `201 → 202`, UUID migration, or replacing `status` must produce `INCOMPATIBLE` and a non-zero workflow exit, blocking the merge until the provider redesigns or versions the change.
 
 ## Cleanup
 
-```shell
-./scripts/cleanup.sh customer-orders
-```
-
-With no argument, cleanup restores all baseline specifications.
-
-## Pre-commit and CI
-
-Enable the hook from the repository root:
+Restore all baseline specifications:
 
 ```shell
-git config core.hooksPath bcc-enterprise-demo/.githooks
+./bcc-enterprise-demo/scripts/cleanup.sh
 ```
 
-The guided pre-commit demonstration runs optional `size` first and mandatory
-`offset` second:
+Restore one pre-canned baseline:
 
 ```shell
-./scripts/pre-commit-changes.sh
+./bcc-enterprise-demo/scripts/cleanup.sh graphql
+./bcc-enterprise-demo/scripts/cleanup.sh grpc
+./bcc-enterprise-demo/scripts/cleanup.sh asyncapi
 ```
-
-To deliberately send the breaking change to CI, bypass the local hook:
-
-```shell
-./scripts/customer_orders.sh --add-offset
-git add specs/baseline/openapi/customer_orders.yaml
-git commit --no-verify -m "Demo: make order offset mandatory"
-git push -u origin demo-ci-offset
-```
-
-The pull-request workflow compares `customer_orders.yaml` with `origin/main`
-and should fail with `INCOMPATIBLE`.

@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "bcc-enterprise-demo/specs/**"
-      - "bcc-enterprise-demo/docker-compose.yml"
+      - "bcc-enterprise-demo/scripts/**"
       - ".github/workflows/bcc.yml"
 
 jobs:
@@ -34,11 +34,12 @@ jobs:
 
       - name: Run OpenAPI BCC
         run: |
-          docker compose \
-            -f bcc-enterprise-demo/docker-compose.yml \
-            run --rm \
-            --entrypoint specmatic \
-            bcc \
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
+            -w /workspace \
+            -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
+            specmatic/enterprise:latest \
             backward-compatibility-check \
             --base-branch origin/${{ github.event.pull_request.base.ref }} \
             --repo-dir /workspace \

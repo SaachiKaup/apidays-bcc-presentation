@@ -29,6 +29,8 @@ message ReserveOrderResponse {
 
 message Order {
   int64 order_id = 1;
+  // DEMO — breaking: replace int64 above with this string field.
+  // string order_id = 1; // e.g. "550e8400-e29b-41d4-a716-446655440000"
   string warehouse_id = 2;
   string status = 3;
   int64 total_minor_units = 4;

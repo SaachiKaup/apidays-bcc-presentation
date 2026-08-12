@@ -6,20 +6,20 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 TARGET="$ROOT/bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls"
 
-if grep -q '^  buyerName: String!$' "$TARGET"; then
-  echo "GraphQL: customerName has already been renamed to buyerName; leaving it unchanged."
+if grep -q '^  deliveryDate: DateTime!$' "$TARGET"; then
+  echo "GraphQL: deliveryDate is already non-null; leaving it unchanged."
   exit 0
 fi
 
-if ! grep -q '^  customerName: String!$' "$TARGET"; then
-  echo "Could not find the baseline customerName field." >&2
+if ! grep -q '^  deliveryDate: DateTime$' "$TARGET"; then
+  echo "Could not find the baseline nullable deliveryDate field." >&2
   exit 1
 fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
-  sed -i '' 's/customerName: String!/buyerName: String!/' "$TARGET"
+  sed -i '' 's/deliveryDate: DateTime$/deliveryDate: DateTime!/' "$TARGET"
 else
-  sed -i 's/customerName: String!/buyerName: String!/' "$TARGET"
+  sed -i 's/deliveryDate: DateTime$/deliveryDate: DateTime!/' "$TARGET"
 fi
 
-echo "Changed GraphQL: customerName is now buyerName."
+echo "Changed GraphQL: deliveryDate is now required (non-null)."

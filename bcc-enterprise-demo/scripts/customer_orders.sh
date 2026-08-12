@@ -10,175 +10,180 @@ MODE=menu
 case "${1:-}" in
   --add-size) MODE=size ;;
   --add-offset) MODE=offset ;;
-  --change-status|--change-status-code) MODE=status_code ;;
-  --global-id|--change-id) MODE=global_id ;;
-  --richer-status) MODE=richer_status ;;
-  --all) MODE=all ;;
+  --async-create) MODE=async ;;
+  --uuid-order-id) MODE=uuid ;;
+  --replace-status) MODE=replace_status ;;
+  --add-updates) MODE=updates ;;
+  --all-breaking) MODE=all_breaking ;;
+  --all-compatible) MODE=all_compatible ;;
   --show-menu) MODE=menu ;;
   "") ;;
-  *)
-    echo "Usage: $0 [--add-size|--add-offset|--change-status|--global-id|--richer-status|--all|--show-menu]" >&2
-    exit 2
-    ;;
+  *) echo "Usage: $0 [--add-size|--add-offset|--async-create|--uuid-order-id|--replace-status|--add-updates|--all-breaking|--all-compatible|--show-menu]" >&2; exit 2 ;;
 esac
 
 if [ "$MODE" = menu ]; then
-  echo "Which customer-orders change would you like to demonstrate?"
-  echo "1) Add optional size — larger result sets need client-controlled page size (COMPATIBLE)"
-  echo "2) Make offset mandatory — every request must declare its page position (INCOMPATIBLE)"
-  echo "3) Change 404 to 422 — standardize order-not-found handling (INCOMPATIBLE)"
-  echo "4) Change numeric IDs to global string IDs — support international identifiers (INCOMPATIBLE)"
-  echo "5) Make status a richer object — expose code, reason, and update time (INCOMPATIBLE)"
-  echo "6) Apply all five changes"
-  printf "Choose 1-6: "
+  echo "Which provider change would you like to demonstrate?"
+  echo "1) Add optional size to GET /orders (COMPATIBLE)"
+  echo "2) Make offset mandatory on GET /orders (INCOMPATIBLE)"
+  echo "3) Change POST /orders from 201 to 202 (INCOMPATIBLE)"
+  echo "4) Change orderId from integer to UUID (INCOMPATIBLE)"
+  echo "5) Replace status with an updates array (INCOMPATIBLE)"
+  echo "6) Add updates while preserving status (COMPATIBLE)"
+  echo "7) Apply all breaking changes"
+  printf "Choose 1-7: "
   read -r choice
   case "$choice" in
-    1) MODE=size ;;
-    2) MODE=offset ;;
-    3) MODE=status_code ;;
-    4) MODE=global_id ;;
-    5) MODE=richer_status ;;
-    6) MODE=all ;;
+    1) MODE=size ;; 2) MODE=offset ;; 3) MODE=async ;; 4) MODE=uuid ;;
+    5) MODE=replace_status ;; 6) MODE=updates ;; 7) MODE=all_breaking ;;
     *) echo "Invalid choice" >&2; exit 2 ;;
   esac
 fi
 
-write_temp() {
+edit() {
   awk "$@" "$TARGET" > "$TARGET.tmp"
   mv "$TARGET.tmp" "$TARGET"
 }
 
-add_parameter() {
-  parameter_name=$1
-  parameter_required=$2
-  parameter_minimum=$3
-  parameter_default=${4:-}
-
-  if grep -q "^        - name: $parameter_name$" "$TARGET"; then
-    echo "Customer Orders: $parameter_name is already present; leaving it unchanged."
-    return 0
+add_page_parameter() {
+  name=$1
+  required=$2
+  default=${3:-}
+  if grep -q "^        - name: $name$" "$TARGET"; then
+    echo "Customer Orders: $name is already present; leaving it unchanged."
+    return
   fi
-
-  write_temp -v parameter_name="$parameter_name" \
-    -v parameter_required="$parameter_required" \
-    -v parameter_minimum="$parameter_minimum" \
-    -v parameter_default="$parameter_default" '
-    /^  \/orders:$/ { in_list_orders=1 }
-    /^  \/orders\/\{orderId\}:$/ { in_list_orders=0 }
-    /^      responses:/ && in_list_orders {
-      print "        - name: " parameter_name
+  edit -v name="$name" -v required="$required" -v default="$default" '
+    /^  \/orders:$/ { in_orders=1 }
+    /^  \/orders\/\{orderId\}:$/ { in_orders=0 }
+    in_orders && /^    post:$/ { in_orders=0 }
+    in_orders && /^      responses:$/ {
+      print "        - name: " name
       print "          in: query"
-      print "          required: " parameter_required
+      print "          required: " required
       print "          schema:"
       print "            type: integer"
-      print "            minimum: " parameter_minimum
-      if (parameter_default != "") print "            default: " parameter_default
-      in_list_orders=0
+      if (name == "size") print "            minimum: 1"
+      else print "            minimum: 0"
+      if (default != "") print "            default: " default
     }
     { print }
   '
-
-  if ! grep -q "^        - name: $parameter_name$" "$TARGET"; then
-    echo "Could not add the $parameter_name parameter." >&2
-    exit 1
-  fi
+  echo "Changed Customer Orders: added $name to GET /orders."
 }
 
-change_status_code() {
-  if grep -v '^[[:space:]]*#' "$TARGET" | grep -q "^        '422':$"; then
-    echo "Customer Orders: the order-not-found response is already 422; leaving it unchanged."
-    return 0
-  fi
-  if ! grep -v '^[[:space:]]*#' "$TARGET" | grep -q "^        '404':$"; then
-    echo "Could not find the baseline 404 response." >&2
-    exit 1
-  fi
-  if [ "$(uname -s)" = "Darwin" ]; then
-    sed -i '' "s/^        '404':$/        '422':/" "$TARGET"
-  else
-    sed -i "s/^        '404':$/        '422':/" "$TARGET"
-  fi
-}
-
-change_global_id() {
-  if grep -v '^[[:space:]]*#' "$TARGET" | grep -q "example: EU-XYZ123"; then
-    echo "Customer Orders: IDs are already global strings; leaving them unchanged."
-    return 0
-  fi
-  if ! grep -v '^[[:space:]]*#' "$TARGET" | grep -q "^    OrderId:$"; then
-    echo "Could not find the shared numeric OrderId schema in the baseline spec." >&2
-    exit 1
-  fi
-  write_temp '
-    /^  schemas:$/ { in_schemas=1 }
-    in_schemas && /^    OrderId:$/ { in_order_id=1; print; next }
-    in_order_id && /^      type: integer$/ { print "      type: string"; next }
-    in_order_id && /^      format: int64$/ { next }
-    in_order_id && /^      example: 202600123$/ { print "      example: EU-XYZ123"; in_order_id=0; next }
-    in_order_id && /^    [A-Za-z][A-Za-z0-9]*:/ { in_order_id=0 }
+change_async_response() {
+  if grep -q "^        '202':$" "$TARGET"; then return; fi
+  edit '
+    /^  \/orders:$/ { in_orders=1 }
+    /^  \/orders\/\{orderId\}:$/ { in_orders=0 }
+    in_orders && /^        '\''201'\'':$/ { sub("201", "202"); print; next }
+    in_orders && /description: Order created$/ { sub("Order created", "Order accepted for background creation") }
     { print }
   '
+  echo "Changed Customer Orders: POST /orders now returns 202 Accepted."
 }
 
-change_richer_status() {
-  if grep -q '^    OrderStatus:$' "$TARGET" && awk '
-    /^    OrderStatus:$/ { in_status=1; next }
-    in_status && /^    OrderStatusCode:/ { exit }
-    in_status && /^      type: object$/ { found=1 }
-    END { exit(found ? 0 : 1) }
-  ' "$TARGET"; then
-    echo "Customer Orders: status is already a structured object; leaving it unchanged."
-    return 0
-  fi
-  write_temp '
+change_uuid() {
+  if grep -q 'format: uuid' "$TARGET"; then return; fi
+  edit '
+    /^    OrderId:$/ { in_id=1; print; next }
+    in_id && /^      type: integer$/ { print "      type: string"; next }
+    in_id && /^      format: int64$/ { print "      format: uuid"; next }
+    in_id && /^      example:/ { print "      example: 550e8400-e29b-41d4-a716-446655440000"; in_id=0; next }
+    in_id && /^    [A-Za-z]/ { in_id=0 }
+    { print }
+  '
+  echo "Changed Customer Orders: orderId now uses UUID values."
+}
+
+replace_status() {
+  if grep -A2 '^    OrderStatus:$' "$TARGET" | grep -q 'type: array'; then return; fi
+  edit '
     /^    OrderStatus:$/ {
       print
-      print "      type: object"
-      print "      required: [code, reason, updatedAt]"
-      print "      properties:"
-      print "        code:"
-      print "          type: string"
-      print "          enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]"
-      print "        reason:"
-      print "          type: string"
-      print "        updatedAt:"
-      print "          type: string"
-      print "          format: date-time"
+      print "      type: array"
+      print "      items:"
+      print "        $ref: '\''#/components/schemas/OrderUpdate'\''"
       in_status=1
       next
     }
     in_status && /^    OrderStatusCode:$/ { in_status=0; print; next }
     !in_status { print }
   '
+  if ! grep -q '^    OrderUpdate:$' "$TARGET"; then
+    edit '
+      /^    Problem:$/ {
+        print "    OrderUpdate:"
+        print "      type: object"
+        print "      required: [updatedAt, reason]"
+        print "      properties:"
+        print "        code:"
+        print "          type: string"
+        print "          enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]"
+        print "        reason:"
+        print "          type: string"
+        print "        updatedAt:"
+        print "          type: string"
+        print "          format: date-time"
+      }
+      { print }
+    '
+  fi
+  echo "Changed Customer Orders: status is now an array of order updates."
+}
+
+add_updates() {
+  if grep -q '^        updates:$' "$TARGET"; then return; fi
+  edit '
+    /^    Order:$/ { in_order=1 }
+    in_order && /^        total:$/ {
+      print "        updates:"
+      print "          type: array"
+      print "          items:"
+      print "            $ref: '\''#/components/schemas/OrderUpdate'\''"
+    }
+    /^    OrderStatusCode:$/ && in_order { in_order=0 }
+    { print }
+  '
+  if ! grep -q '^    OrderUpdate:$' "$TARGET"; then
+    edit '
+      /^    Problem:$/ {
+        print "    OrderUpdate:"
+        print "      type: object"
+        print "      required: [updatedAt, reason]"
+        print "      properties:"
+        print "        code:"
+        print "          type: string"
+        print "          enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]"
+        print "        reason:"
+        print "          type: string"
+        print "        updatedAt:"
+        print "          type: string"
+        print "          format: date-time"
+      }
+      { print }
+    '
+  fi
+  echo "Changed Customer Orders: added optional updates while preserving status."
 }
 
 case "$MODE" in
-  size)
-    add_parameter size false 1 20
-    echo "Changed Customer Orders: added optional size for client-controlled page size."
+  size) add_page_parameter size false 20 ;;
+  offset) add_page_parameter offset true ;;
+  async) change_async_response ;;
+  uuid) change_uuid ;;
+  replace_status) replace_status ;;
+  updates) add_updates ;;
+  all_breaking)
+    add_page_parameter size false 20
+    add_page_parameter offset true
+    change_async_response
+    change_uuid
+    replace_status
     ;;
-  offset)
-    add_parameter offset true 0
-    echo "Changed Customer Orders: added mandatory offset for explicit page position."
-    ;;
-  status_code)
-    change_status_code
-    echo "Changed Customer Orders: order-not-found responses now use 422 instead of 404."
-    ;;
-  global_id)
-    change_global_id
-    echo "Changed Customer Orders: numeric IDs now support global values such as EU-XYZ123."
-    ;;
-  richer_status)
-    change_richer_status
-    echo "Changed Customer Orders: status now includes code, reason, and updatedAt."
-    ;;
-  all)
-    add_parameter size false 1 20
-    add_parameter offset true 0
-    change_status_code
-    change_global_id
-    change_richer_status
-    echo "Changed Customer Orders: applied pagination, error, ID, and richer-status changes."
+  all_compatible)
+    add_page_parameter size false 20
+    add_page_parameter offset false 0
+    add_updates
     ;;
 esac

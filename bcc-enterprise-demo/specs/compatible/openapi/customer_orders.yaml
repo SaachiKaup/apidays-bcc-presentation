@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Customer Orders API
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: https://orders.example.test
 security:
@@ -15,36 +15,39 @@ paths:
         - name: customerId
           in: query
           required: true
-          schema:
-            type: string
+          schema: { type: string }
         - name: status
           in: query
           required: false
-          schema:
-            $ref: '#/components/schemas/OrderStatusCode'
-        # COMPATIBLE pagination: add page size without requiring old clients to send it.
+          schema: { $ref: '#/components/schemas/OrderStatusCode' }
         - name: size
           in: query
           required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 20
-        # COMPATIBLE pagination: keep offset optional and default it for old clients.
+          schema: { type: integer, minimum: 1, default: 20 }
         - name: offset
           in: query
           required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         '200':
           description: Orders
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/OrderList'
+              schema: { $ref: '#/components/schemas/OrderList' }
+    post:
+      operationId: createOrder
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrderRequest' }
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -56,40 +59,18 @@ paths:
           description: Order details
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
+              schema: { $ref: '#/components/schemas/Order' }
         '404':
-          $ref: '#/components/responses/OrderNotFound'
-        # COMPATIBLE status-code evolution: retain 404 and add 422.
-        '422':
           $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /client_orders:
-    get:
-      operationId: listClientOrders
-      summary: List orders for a client
-      parameters:
-        - name: clientId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Orders for the client
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrderList'
 components:
   parameters:
     OrderId:
       name: orderId
       in: path
       required: true
-      schema:
-        $ref: '#/components/schemas/OrderId'
+      schema: { $ref: '#/components/schemas/OrderId' }
   responses:
     Unauthorized:
       description: Authentication required
@@ -97,61 +78,56 @@ components:
       description: Order does not exist
       content:
         application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
+          schema: { $ref: '#/components/schemas/Problem' }
   schemas:
     OrderId:
       type: integer
       format: int64
       example: 202600123
+    CreateOrderRequest:
+      type: object
+      required: [customerId, total]
+      properties:
+        customerId: { type: string }
+        total: { type: number, format: double }
     OrderList:
       type: array
-      items:
-        $ref: '#/components/schemas/Order'
+      items: { $ref: '#/components/schemas/Order' }
     Order:
       type: object
       required: [id, customerId, status, total]
       properties:
-        id:
-          $ref: '#/components/schemas/OrderId'
-        customerId:
+        id: { $ref: '#/components/schemas/OrderId' }
+        globalOrderId:
           type: string
-        status:
-          $ref: '#/components/schemas/OrderStatus'
-        # COMPATIBLE shape evolution: retain string status and add optional details.
-        statusDetails:
-          $ref: '#/components/schemas/OrderStatusDetails'
-        # COMPATIBLE type evolution: retain numeric id and add a new string identifier.
-        internationalId:
-          type: string
-          example: EU-XYZ123
-        total:
-          type: number
-          format: double
-        currency:
-          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        customerId: { type: string }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        updates:
+          type: array
+          items: { $ref: '#/components/schemas/OrderUpdate' }
+        total: { type: number, format: double }
+        currency: { type: string }
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
+    OrderUpdate:
+      type: object
+      required: [updatedAt, reason]
+      properties:
+        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
+        reason: { type: string }
+        updatedAt: { type: string, format: date-time }
     OrderStatusCode:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-    OrderStatusDetails:
-      type: object
-      properties:
-        reason:
-          type: string
-        updatedAt:
-          type: string
-          format: date-time
     Problem:
       type: object
       required: [code, message]
       properties:
-        code:
-          type: string
-        message:
-          type: string
+        code: { type: string }
+        message: { type: string }
   securitySchemes:
     bearerAuth:
       type: http
