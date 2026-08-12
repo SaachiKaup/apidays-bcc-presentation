@@ -23,13 +23,13 @@ paths:
           schema:
             $ref: '#/components/schemas/OrderStatusCode'
         # DEMO 1 — compatible: uncomment this optional size parameter.
-#        - name: size
-#          in: query
-#          required: false
-#          schema:
-#            type: integer
-#            minimum: 1
-#            default: 20
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
         # DEMO 2 — breaking: uncomment this mandatory offset parameter.
 #        - name: offset
 #          in: query
