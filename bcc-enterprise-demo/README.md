@@ -234,6 +234,34 @@ The helper can apply the equivalent changes automatically, but it is not require
 
 From the repository root:
 
+The short demo command is:
+
+```shell
+docker run --rm -v ${PWD}:/usr/src/app \
+  specmatic/specmatic:demo backward-compatibility-check \
+  --base-branch main \
+  --target-path bcc-enterprise-demo/specs/baseline/openapi
+```
+
+This checks the OpenAPI contracts in the target directory against `main`.
+
+### Why an `OrderId` change can affect every operation
+
+Yes, this is expected for the current UUID exercise. `OrderId` is a shared schema:
+
+- `GET /orders/{orderId}` uses it as a path parameter and returns an `Order`;
+- `POST /orders` returns an `Order`;
+- `GET /orders` returns an `OrderList`, which contains `Order` objects;
+- `GET /client_orders` also returns an `OrderList`.
+
+Both `Order` and `OrderList` eventually refer to `OrderId`. Therefore, changing `OrderId` from an integer to a UUID changes the contract graph for all four operations. The report is not matching the word `orders`; it is showing the operations whose request or response contract depends on the changed shared schema. The `changed` markers show this propagated impact; the actual incompatibility is the shared ID type change.
+
+For the short demo, this is useful: one shared schema change can affect many consumers, which is exactly why BCC needs to trace references across the specification.
+
+For a more focused impact, change a schema used only by one operation, or add a separate schema for a new endpoint.
+
+The fully explicit version of the same command is:
+
 ```shell
 docker run --rm \
   -v "$PWD:/workspace" \
