@@ -6,7 +6,6 @@ on:
       - "bcc-enterprise-demo/specs/**"
       - "bcc-enterprise-demo/scripts/**"
       - ".github/workflows/bcc.yml"
-      - "explanations/**"
 
 jobs:
   openapi-bcc:
@@ -24,8 +23,8 @@ jobs:
 
       - name: Fetch pull request base branch
         run: |
-          git fetch --no-tags origin \
-            "+refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin \
+            "refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
           git rev-parse "origin/${{ github.event.pull_request.base.ref }}"
 
       - name: Create Specmatic license file
@@ -34,20 +33,9 @@ jobs:
         run: |
           printf '%s' "$SPECMATIC_LICENSE" > bcc-enterprise-demo/license.txt
 
-      - name: Verify Git baseline is visible to Docker
-        run: |
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            -v "${PWD}:/workspace" \
-            -w /workspace \
-            --entrypoint git \
-            specmatic/enterprise:latest \
-            rev-parse "origin/${{ github.event.pull_request.base.ref }}"
-
       - name: Run OpenAPI BCC
         run: |
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
             -v "${PWD}:/workspace" \
             -v "${PWD}/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
             -w /workspace \
