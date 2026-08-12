@@ -107,7 +107,7 @@ Alternative command:
 ./scripts/customer_orders.sh --async-create
 ```
 
-The compatible design keeps `POST /orders` and its existing `201` response, then adds `202` as another possible response with a monitor link to `GET /monitor/{id}`. Existing consumers can continue using `201`; new consumers can opt into the asynchronous behavior.
+The compatible file keeps only the safe evolution: `POST /orders` continues to return `201`. To deliberately introduce the asynchronous flow, use the versioned `specs/v1.0.1/openapi/customer_orders.yaml`, where the same endpoint returns `202` with an inline monitor link and `201` is removed.
 
 ### 3. Move from numeric IDs to UUIDs — INCOMPATIBLE
 
@@ -204,6 +204,7 @@ For this demo, the prepared files illustrate the two sides:
 specs/baseline/openapi/customer_orders.yaml    current v1 contract
 specs/breaking/openapi/customer_orders.yaml    proposed breaking release
 specs/compatible/openapi/customer_orders.yaml  safe evolution of v1
+specs/v1.0.1/openapi/customer_orders.yaml      versioned release with UUIDs and 202
 ```
 
 The BCC command compares a changed contract with its Git baseline using `--base-branch`, and `--target-path` limits the check to the contract being demonstrated. See the [Specmatic backward compatibility documentation](https://docs.specmatic.io/contract_driven_development/backward_compatibility) for the workflow and command options.

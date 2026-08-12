@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: Customer Orders API
-  version: 1.1.0
+  version: 2.0.0
 servers:
-  - url: https://orders.example.test
+  - url: https://orders.example.test/v2
 security:
   - bearerAuth: []
 paths:
@@ -36,18 +36,37 @@ paths:
               schema: { $ref: '#/components/schemas/OrderList' }
     post:
       operationId: createOrder
-      summary: Create an order
+      summary: Accept an order for background creation
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/CreateOrderRequest' }
       responses:
-        '201':
-          description: Order created
+        '202':
+          description: Order accepted and queued for background creation
+          headers:
+            Link:
+              description: Link used to monitor order-creation progress
+              schema:
+                type: string
+                description: Monitor link to check order-creation status
+                example: </monitor/abc-123>;rel=related;title=monitor
+  /monitor/{id}:
+    get:
+      operationId: getOrderCreationStatus
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Current order-creation request status
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Order' }
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: {type: string, enum: [ACCEPTED, PROCESSING, COMPLETED, FAILED]}
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -96,9 +115,9 @@ components:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
     OrderId:
-      type: integer
-      format: int64
-      example: 202600123
+      type: string
+      format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440000
     CreateOrderRequest:
       type: object
       required: [customerId, total]
