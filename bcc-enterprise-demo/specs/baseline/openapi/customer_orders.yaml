@@ -31,12 +31,12 @@ paths:
 #            minimum: 1
 #            default: 20
         # DEMO 2 — breaking: uncomment this mandatory offset parameter.
-#        - name: offset
-#          in: query
-#          required: true
-#          schema:
-#            type: integer
-#            minimum: 0
+        - name: offset
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
       responses:
         '200':
           description: Orders
