@@ -233,7 +233,7 @@ The helper can apply the equivalent changes automatically, but it is not require
 
 ## Run BCC with Docker
 
-From the repository root:
+From the repository root, the lab-style command is:
 
 The short demo command is:
 
@@ -265,6 +265,7 @@ The fully explicit version of the same command is:
 
 ```shell
 docker run --rm \
+  --user "$(id -u):$(id -g)" \
   -v "$PWD:/workspace" \
   -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
   -w /workspace \
