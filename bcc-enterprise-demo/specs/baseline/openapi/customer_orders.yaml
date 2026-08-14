@@ -21,7 +21,7 @@ paths:
           in: query
           required: false
           schema:
-            $ref: '#/components/schemas/OrderStatusCode'
+            $ref: '#/components/schemas/OrderStatus'
 #        - name: size
 #          in: query
 #          required: false
@@ -165,9 +165,6 @@ components:
 #        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
 #        reason: { type: string }
 #        updatedAt: { type: string, format: date-time }
-    OrderStatusCode:
-      type: string
-      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
     Problem:
       type: object
       required: [code, message]
