@@ -6,8 +6,6 @@ The provider is considering several reasonable changes. The question is whether 
 
 OpenAPI is the detailed demonstration. GraphQL, gRPC, and AsyncAPI are short demonstrations showing that the same BCC capability applies to other specification types.
 
-Throughout the demo, say **service** consistently. The examples describe changes made by the provider to services and their specifications.
-
 ## Why start with backward compatibility?
 
 > If changing a web API response can make more than one in three mobile applications fail, how do we know which consumers are safe before we release?
@@ -276,71 +274,15 @@ From the repository root:
 The command used in the demo is:
 
 ```shell
-docker run --rm \
-  -v "${PWD}:/workspace" \
-  -v "${PWD}/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
-  -w /workspace \
-  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
-  specmatic/enterprise:latest backward-compatibility-check \
-  --base-branch main \
-  --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi
+docker run --rm -v ${PWD}:/usr/src/app \          
+    specmatic/enterprise backward-compatibility-check \
+    --base-branch main \
+    --target-path bcc-enterprise-demo/specs/baseline/openapi
 ```
 
 This checks the OpenAPI contracts in the target directory against `main`. Use the same check locally **and** in CI. In CI, the baseline is normally `origin/${{ github.event.pull_request.base.ref }}`; locally, use the local `main` or the last fetched `origin/main`, depending on the consumer baseline being protected.
 
-### Show the failed scenarios
-
-Do not stop at the summary line. When the result is incompatible, open the failed scenario and show:
-
-1. the operation and response status;
-2. the breadcrumb identifying the changed contract location;
-3. the old value and new value side by side;
-4. the plain-English reason the existing service consumer may fail.
-
-For example:
-
-```text
-Old contract                         Proposed contract
-GET /orders?offset absent           GET /orders?offset required
-POST /orders → 201 Created          POST /orders → 202 Accepted
-orderId: integer                    orderId: string, format: uuid
-status: string                      status: array of updates
-```
-
-For the compatible `size` change, show the same comparison and the passing verdict. The point is to show both the changed scenario and the final BCC result, not to imply that every changed marker is a failure.
-
-### Why an `OrderId` change can affect every operation
-
-Yes, this is expected for the current UUID exercise. `OrderId` is a shared schema:
-
-- `GET /orders/{orderId}` uses it as a path parameter and returns an `Order`;
-- `POST /orders` returns an `Order`;
-- `GET /orders` returns an `OrderList`, which contains `Order` objects;
-- `GET /client_orders` also returns an `OrderList`.
-
-Both `Order` and `OrderList` eventually refer to `OrderId`. Therefore, changing `OrderId` from an integer to a UUID changes the contract graph for all four operations. The report is not matching the word `orders`; it is showing the operations whose request or response contract depends on the changed shared schema. The `changed` markers show this propagated impact; the actual incompatibility is the shared ID type change.
-
-For the short demo, this is useful: one shared schema change can affect many consumers, which is exactly why BCC needs to trace references across the specification.
-
-For a more focused impact, change a schema used only by one operation, or add a separate schema for a new endpoint.
-
-The fully explicit version of the same command is:
-
-```shell
-docker run --rm \
-  -v "$PWD:/workspace" \
-  -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
-  -w /workspace \
-  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
-  specmatic/enterprise:latest \
-  backward-compatibility-check \
-  --base-branch main \
-  --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
-```
-
-The same command is available through:
+The same command is available through the helper script:
 
 ```shell
 ./bcc-enterprise-demo/scripts/specmatic-bcc.sh \
@@ -392,15 +334,10 @@ No compatible variants are required for these three short demonstrations.
 The GitHub Actions workflow runs BCC for OpenAPI pull requests using the same Enterprise Docker image and the same compatibility check shown above:
 
 ```shell
-docker run --rm \
-  -v "${PWD}:/workspace" \
-  -v "${PWD}/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
-  -w /workspace \
-  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
-  specmatic/enterprise:latest backward-compatibility-check \
-  --base-branch origin/main \
-  --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi
+docker run --rm -v ${PWD}:/usr/src/app \          
+    specmatic/enteprise backward-compatibility-check \
+    --base-branch main \
+    --target-path bcc-enterprise-demo/specs/baseline/openapi
 ```
 
 The workflow fails when BCC returns a non-zero exit code. A breaking change such as mandatory `offset`, `201 → 202`, UUID migration, or replacing `status` therefore appears as a failed check.
