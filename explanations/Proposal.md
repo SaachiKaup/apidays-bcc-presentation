@@ -23,7 +23,7 @@ The session covers less obvious breaking changes—response-shape changes, enum 
 #### 2. Why one enterprise needs compatibility across specs — 6:00–9:00 (3 min)
 
 1. Define compatibility from the consumer’s point of view, not the producer’s.
-2. Explain that enterprise systems use OpenAPI, AsyncAPI, GraphQL, gRPC, and other specification types together.
+2. Explain that enterprise services use OpenAPI, AsyncAPI, GraphQL, gRPC, and other specification types together.
 3. Show a quick pre-canned BCC demo for each spec type: a representative contract change, the compatibility result, and the consumer expectation protected.
 4. Position Specmatic BCC as one workflow for finding breaking changes across these contracts.
 

@@ -1,10 +1,10 @@
 # Enterprise Backward Compatibility Demo
 
-You are a product shipping company. Your customer base has been steadily expanding, increasing the load on your systems. You want to redesign the platform to handle that load, reduce failures, and provide customers with granular order updates instead of only a single status.
+You are an e-commerce company. Your customer base has been steadily expanding, increasing the load on your services. You want to redesign the platform to handle that load, reduce failures, and provide customers with granular order updates instead of only a single status.
 
 The provider is considering several reasonable changes. The question is whether existing consumers will continue to work when the contract changes.
 
-OpenAPI is the detailed demonstration. GraphQL, gRPC, and AsyncAPI are short pre-canned demonstrations showing that the same BCC capability applies to other specification types.
+OpenAPI is the detailed demonstration. GraphQL, gRPC, and AsyncAPI are short demonstrations showing that the same BCC capability applies to other specification types.
 
 ## Why start with backward compatibility?
 
@@ -19,15 +19,25 @@ Sources: [mobile API response study](https://link.springer.com/article/10.1007/s
 ## Prerequisites
 
 - Docker Desktop or Docker Engine;
-- a Specmatic Enterprise license in `license.txt`.
+- a valid Specmatic Enterprise license in `license.txt`.
 
-Run from the repository root unless a command says otherwise:
+The demo must use a valid Enterprise license. If the output says that the license is expired or that a trial license is being used, replace `license.txt` before presenting; do not present the trial-license output.
+
+Run from the repository root, the directory containing `bcc-enterprise-demo`:
 
 ```shell
-cd bcc-enterprise-demo
+pwd
 ```
 
 ## The provider's proposed changes
+
+Start from a clean, committed baseline. Create a separate demonstration branch before changing a specification:
+
+```shell
+git switch -c demo-bcc-changes
+```
+
+The baseline is already committed on `main`. The sequence is intentional: make one change, commit it, and then run BCC against the baseline. This lets the audience see the actual change and the compatibility result without first accumulating unrelated edits.
 
 ### 1. Paginate the order history
 
@@ -39,9 +49,13 @@ The important question is not whether pagination is useful. It is whether the ne
 
 An optional `size` lets new clients control the number of orders returned. Existing requests do not need to change.
 
-In `specs/baseline/openapi/customer_orders.yaml`, uncomment the `size` block marked **DEMO 1** under `GET /orders`.
+In `bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml`, uncomment the `size` block marked **DEMO 1** under `GET /orders`.
 
 ```yaml
+# main                         demo branch
+# GET /orders                  GET /orders
+# no size parameter             size: optional, default: 20
+
 - name: size
   in: query
   required: false
@@ -54,8 +68,18 @@ In `specs/baseline/openapi/customer_orders.yaml`, uncomment the `size` block mar
 Alternative command:
 
 ```shell
-./scripts/customer_orders.sh --add-size
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-size
 ```
+
+Commit the change, then run BCC:
+
+```shell
+git add bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
+git commit -m "Demo: add optional order page size"
+./bcc-enterprise-demo/scripts/specmatic-bcc.sh bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
+```
+
+Expected result: `COMPATIBLE`. The report should show the operation as checked and the compatible scenarios as passing. If a scenario is marked as changed, open it and show the exact request or response comparison; the important point is that the compatibility verdict passes.
 
 #### Make `offset` mandatory
 
@@ -64,6 +88,9 @@ The provider may later decide that every request must explicitly state its posit
 Replace the active pagination parameter area with the commented `offset` block marked **DEMO 2**.
 
 ```yaml
+# main                         demo branch
+# offset is absent             offset: required
+
 - name: offset
   in: query
   required: true
@@ -75,14 +102,14 @@ Replace the active pagination parameter area with the commented `offset` block m
 Alternative command:
 
 ```shell
-./scripts/customer_orders.sh --add-offset
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-offset
 ```
 
-The lesson is that adding an optional parameter is safe, while making a new parameter mandatory breaks existing requests.
+The lesson is that adding an optional parameter is safe, while making a new parameter mandatory breaks existing requests. Do not apply this breaking change to the committed v1 baseline during the main demo. Keep it as a proposed versioned change, or use a temporary demo branch when you need to show the failing report.
 
 ### 2. Move order creation from synchronous to asynchronous
 
-The provider wants to acknowledge an order immediately and create it in the background. This reduces the time a customer waits for the creation request and helps the system absorb higher load.
+The provider wants to acknowledge an order immediately and create it in the background. This reduces the time a customer waits for the creation request and helps the service absorb higher load.
 
 The provider changes:
 
@@ -99,21 +126,28 @@ Link: </monitor/abc-123>;rel=related;title=monitor
 
 Existing consumers may interpret `201` as “the order has been created.” Changing it to `202` changes that contract and is therefore breaking.
 
-For the manual demo, comment out the active `201` response block and uncomment the `202` response marked **DEMO 3**. The asynchronous response does not pretend that the order is already complete; it returns an inline `Link` header that points to the monitor resource.
+For the manual demo, compare the current `201` response with the proposed `202` response side by side. The asynchronous response does not pretend that the order is already complete; it returns an inline `Link` header that points to the monitor resource.
+
+```yaml
+# v1 response                  proposed versioned response
+# '201': Created                '202': Accepted
+# order is created              order is queued
+# no monitor link               Link: </monitor/{id}>;rel=related
+```
 
 Alternative command:
 
 ```shell
-./scripts/customer_orders.sh --async-create
+./bcc-enterprise-demo/scripts/customer_orders.sh --async-create
 ```
 
-The compatible file keeps only the safe evolution: `POST /orders` continues to return `201`. To deliberately introduce the asynchronous flow, use the versioned `specs/v1.0.1/openapi/customer_orders.yaml`, where the same endpoint returns `202` with an inline monitor link and `201` is removed.
+The compatible file keeps only the safe evolution: `POST /orders` continues to return `201`. To deliberately introduce the asynchronous flow, use the versioned `bcc-enterprise-demo/specs/v2.0.0/openapi/customer_orders.yaml`, where the same endpoint returns `202` with an inline monitor link and `201` is removed.
 
 ### 3. Move from numeric IDs to UUIDs — INCOMPATIBLE
 
 As the customer base grows internationally, the provider wants an identifier system that is globally unique and easier to allocate across regions. Existing consumers currently expect numeric order IDs.
 
-Replace the active `OrderId` schema with the commented UUID version marked **DEMO 4**:
+Replace the active `OrderId` schema in the new versioned file with the UUID version marked **DEMO 4**:
 
 ```yaml
 type: string
@@ -128,7 +162,7 @@ The compatible design preserves the numeric ID and adds an optional UUID field s
 Alternative command for the breaking change:
 
 ```shell
-./scripts/customer_orders.sh --uuid-order-id
+./bcc-enterprise-demo/scripts/customer_orders.sh --uuid-order-id
 ```
 
 ### 4. Provide granular order updates
@@ -139,7 +173,7 @@ Customers and support teams need more than `SHIPPED`. They want updates such as 
 
 Replacing the existing string status with an array changes the payload shape. Existing consumers that read `status` as a string will fail.
 
-Replace the active `OrderStatus` schema with the commented array marked **DEMO 5**:
+Replace the active `OrderStatus` schema in the proposed versioned file with the commented array marked **DEMO 5**:
 
 ```yaml
 status:
@@ -151,7 +185,7 @@ status:
 Alternative command:
 
 ```shell
-./scripts/customer_orders.sh --replace-status
+./bcc-enterprise-demo/scripts/customer_orders.sh --replace-status
 ```
 
 #### Preserve `status` and add `updates` — COMPATIBLE
@@ -173,7 +207,7 @@ Existing consumers continue reading `status`; newer consumers can use `updates`.
 Alternative command:
 
 ```shell
-./scripts/customer_orders.sh --add-updates
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-updates
 ```
 
 ## Introducing a deliberate breaking change with a new API version
@@ -186,7 +220,7 @@ For example, use a new API version for the UUID migration or the asynchronous or
 2. Copy the contract to a new versioned location, such as:
 
    ```text
-   specs/v2/openapi/customer_orders.yaml
+   bcc-enterprise-demo/specs/v2.0.0/openapi/customer_orders.yaml
    ```
 
 3. Update the new contract's `info.version`, for example from `1.0.0` to `2.0.0`.
@@ -201,82 +235,54 @@ The version number in `info.version` documents the release, but it does not by i
 For this demo, the prepared files illustrate the two sides:
 
 ```text
-specs/baseline/openapi/customer_orders.yaml    current v1 contract
-specs/breaking/openapi/customer_orders.yaml    proposed breaking release
-specs/compatible/openapi/customer_orders.yaml  safe evolution of v1
-specs/v1.0.1/openapi/customer_orders.yaml      versioned release with UUIDs and 202
+bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml    current v1 contract
+bcc-enterprise-demo/specs/breaking/openapi/customer_orders.yaml    proposed breaking release
+bcc-enterprise-demo/specs/compatible/openapi/customer_orders.yaml  safe evolution of v1
+bcc-enterprise-demo/specs/v2.0.0/openapi/customer_orders.yaml      versioned release with UUIDs and 202
 ```
+
+The versioned file is the place for deliberate breaking changes. The current v1 specification remains the consumer promise. A `specmatic.yaml` file in this demo points contract-based testing at the v2 specification, so the version boundary is explicit rather than inferred from a filename alone.
 
 The BCC command compares a changed contract with its Git baseline using `--base-branch`, and `--target-path` limits the check to the contract being demonstrated. See the [Specmatic backward compatibility documentation](https://docs.specmatic.io/contract_driven_development/backward_compatibility) for the workflow and command options.
 
 ## Practice the OpenAPI changes manually
 
-The baseline file contains commented examples. For each exercise:
+The baseline file contains the current v1 contract and commented examples for safe rehearsal. Versioned files contain deliberate breaking proposals. For each exercise:
 
 1. Start from the committed baseline.
 2. Uncomment only the block for the exercise.
 3. If the comment says “replace,” comment out the current active definition first.
 4. Run BCC.
 5. Inspect the result and the generated report.
-6. Restore the baseline before the next exercise.
+6. Restore the baseline before the next exercise, unless you are intentionally working in the versioned proposal file.
 
-The helper can apply the equivalent changes automatically, but it is not required for the demo:
+The helper can apply the equivalent changes automatically, but it is not required for the demo. Its breaking-change options edit the baseline for rehearsal, so use them only on a separate demonstration branch; the actual deliberate breaking release belongs in a versioned proposal file:
 
 ```shell
-./scripts/customer_orders.sh --add-size
-./scripts/customer_orders.sh --add-offset
-./scripts/customer_orders.sh --async-create
-./scripts/customer_orders.sh --uuid-order-id
-./scripts/customer_orders.sh --replace-status
-./scripts/customer_orders.sh --add-updates
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-size
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-offset
+./bcc-enterprise-demo/scripts/customer_orders.sh --async-create
+./bcc-enterprise-demo/scripts/customer_orders.sh --uuid-order-id
+./bcc-enterprise-demo/scripts/customer_orders.sh --replace-status
+./bcc-enterprise-demo/scripts/customer_orders.sh --add-updates
 ```
 
 ## Run BCC with Docker
 
 From the repository root:
 
-The short demo command is:
+The command used in the demo is:
 
 ```shell
-docker run --rm -v ${PWD}:/usr/src/app \
-  specmatic/specmatic:demo backward-compatibility-check \
-  --base-branch main \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi
+docker run --rm -v ${PWD}:/usr/src/app \          
+    specmatic/enterprise backward-compatibility-check \
+    --base-branch main \
+    --target-path bcc-enterprise-demo/specs/baseline/openapi
 ```
 
-This checks the OpenAPI contracts in the target directory against `main`.
+This checks the OpenAPI contracts in the target directory against `main`. Use the same check locally **and** in CI. In CI, the baseline is normally `origin/${{ github.event.pull_request.base.ref }}`; locally, use the local `main` or the last fetched `origin/main`, depending on the consumer baseline being protected.
 
-### Why an `OrderId` change can affect every operation
-
-Yes, this is expected for the current UUID exercise. `OrderId` is a shared schema:
-
-- `GET /orders/{orderId}` uses it as a path parameter and returns an `Order`;
-- `POST /orders` returns an `Order`;
-- `GET /orders` returns an `OrderList`, which contains `Order` objects;
-- `GET /client_orders` also returns an `OrderList`.
-
-Both `Order` and `OrderList` eventually refer to `OrderId`. Therefore, changing `OrderId` from an integer to a UUID changes the contract graph for all four operations. The report is not matching the word `orders`; it is showing the operations whose request or response contract depends on the changed shared schema. The `changed` markers show this propagated impact; the actual incompatibility is the shared ID type change.
-
-For the short demo, this is useful: one shared schema change can affect many consumers, which is exactly why BCC needs to trace references across the specification.
-
-For a more focused impact, change a schema used only by one operation, or add a separate schema for a new endpoint.
-
-The fully explicit version of the same command is:
-
-```shell
-docker run --rm \
-  -v "$PWD:/workspace" \
-  -v "$PWD/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro" \
-  -w /workspace \
-  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
-  specmatic/enterprise:latest \
-  backward-compatibility-check \
-  --base-branch main \
-  --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
-```
-
-The same command is available through:
+The same command is available through the helper script:
 
 ```shell
 ./bcc-enterprise-demo/scripts/specmatic-bcc.sh \
@@ -285,7 +291,7 @@ The same command is available through:
 
 Reports are written to `build/reports/specmatic/backward_compatibility/`.
 
-## Pre-canned demos for other specification types
+## Short demonstrations for other specification types
 
 These are intentionally brief. Show the baseline, state the provider motivation, uncomment the commented change in the baseline file, and run the command.
 
@@ -293,30 +299,30 @@ These are intentionally brief. Show the baseline, state the provider motivation,
 
 The customer portal wants to filter orders by status. The provider makes the existing `status` argument mandatory, assuming every client can now provide it. Older queries may omit it, so they no longer match the schema.
 
-In `specs/baseline/graphql/orders.graphqls`, replace the active `orders` field with the commented version that uses `status: OrderStatus!`.
+In `bcc-enterprise-demo/specs/baseline/graphql/orders.graphqls`, replace the active `orders` field with the commented version that uses `status: OrderStatus!`.
 
 ```shell
-./scripts/run-pre-canned.sh graphql
+./bcc-enterprise-demo/scripts/demo.sh graphql
 ```
 
 Expected result: `INCOMPATIBLE`.
 
 ### gRPC
 
-The provider wants globally unique order IDs. In `specs/baseline/grpc/warehouse.proto`, replace `int64 order_id` with the commented string field.
+The provider wants globally unique order IDs. In `bcc-enterprise-demo/specs/baseline/grpc/warehouse.proto`, replace `int64 order_id` with the commented string field.
 
 ```shell
-./scripts/run-pre-canned.sh grpc
+./bcc-enterprise-demo/scripts/demo.sh grpc
 ```
 
 Expected result: `INCOMPATIBLE`.
 
 ### AsyncAPI
 
-The provider wants shipping consumers to receive a status code, reason, and timestamp. In `specs/baseline/asyncapi/shipping-events.yaml`, replace the string `status` with the commented object.
+The provider wants shipping consumers to receive a status code, reason, and timestamp. In `bcc-enterprise-demo/specs/baseline/asyncapi/shipping-events.yaml`, replace the string `status` with the commented object.
 
 ```shell
-./scripts/run-pre-canned.sh asyncapi
+./bcc-enterprise-demo/scripts/demo.sh asyncapi
 ```
 
 Expected result: `INCOMPATIBLE`.
@@ -325,13 +331,13 @@ No compatible variants are required for these three short demonstrations.
 
 ## CI merge protection
 
-The GitHub Actions workflow runs BCC for OpenAPI pull requests using the same Docker command shown above:
+The GitHub Actions workflow runs BCC for OpenAPI pull requests using the same Enterprise Docker image and the same compatibility check shown above:
 
 ```shell
-docker run --rm -v ${PWD}:/usr/src/app \
-  specmatic/specmatic:demo backward-compatibility-check \
-  --base-branch origin/main \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi
+docker run --rm -v ${PWD}:/usr/src/app \          
+    specmatic/enteprise backward-compatibility-check \
+    --base-branch main \
+    --target-path bcc-enterprise-demo/specs/baseline/openapi
 ```
 
 The workflow fails when BCC returns a non-zero exit code. A breaking change such as mandatory `offset`, `201 → 202`, UUID migration, or replacing `status` therefore appears as a failed check.
@@ -347,6 +353,8 @@ To make that failed check prevent merging, configure GitHub branch protection:
 
 After this, a pull request with an incompatible baseline spec cannot be merged until the change is redesigned, versioned, or otherwise resolved.
 
+The local check and the CI check are complementary: local BCC gives fast feedback while editing, and CI protects the shared branch against changes that were not checked locally or were introduced through another workflow.
+
 ## Cleanup
 
 Restore all baseline specifications:
@@ -355,7 +363,7 @@ Restore all baseline specifications:
 ./bcc-enterprise-demo/scripts/cleanup.sh
 ```
 
-Restore one pre-canned baseline:
+Restore one short-demo baseline:
 
 ```shell
 ./bcc-enterprise-demo/scripts/cleanup.sh graphql

@@ -2,9 +2,9 @@
 
 ## Central Idea
 
-A large enterprise rarely uses only OpenAPI. Different systems may use OpenAPI for REST APIs, GraphQL for customer applications, gRPC for internal services, and AsyncAPI for events.
+A large enterprise rarely uses only OpenAPI. Different services may use OpenAPI for REST APIs, GraphQL for customer-facing services, gRPC for internal services, and AsyncAPI for event-driven services.
 
-These systems are different, but the business risk is the same:
+These services are different, but the business risk is the same:
 
 > How do we know a contract change will not break consumers that already depend on it?
 
