@@ -29,12 +29,12 @@ paths:
 #            type: integer
 #            minimum: 1
 #            default: 20
-        - name: offset
-          in: query
-          required: true
-          schema:
-            type: integer
-            minimum: 0
+#        - name: offset
+#          in: query
+#          required: true
+#          schema:
+#            type: integer
+#            minimum: 0
       responses:
         '200':
           description: Orders
