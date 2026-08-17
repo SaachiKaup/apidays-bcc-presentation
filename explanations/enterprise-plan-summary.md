@@ -2,9 +2,9 @@
 
 ## Central Idea
 
-A large enterprise rarely uses only OpenAPI. Different systems may use OpenAPI for REST APIs, GraphQL for customer applications, gRPC for internal services, and AsyncAPI for events.
+A large enterprise rarely uses only OpenAPI. Different services may use OpenAPI for REST APIs, GraphQL for customer-facing services, gRPC for internal services, and AsyncAPI for event-driven services.
 
-These systems are different, but the business risk is the same:
+These services are different, but the business risk is the same:
 
 > How do we know a contract change will not break consumers that already depend on it?
 
@@ -24,7 +24,7 @@ Each change solves a real problem. The risk is that existing consumers still dep
 | Contract | Business need | Proposed evolution |
 |---|---|---|
 | OpenAPI | Support larger order histories and standardize errors | Add optional `skip`/`limit`; make `limit` mandatory **and** change `404` to `422` |
-| GraphQL | Standardize customer terminology | Rename `customerName` to `buyerName`; existing queries would fail |
+| GraphQL | Require the customer portal to filter orders by status | Make the existing optional `status` argument mandatory; older queries may omit it |
 | gRPC | Support international warehouse IDs | Change `orderId` from an integer to a string; existing generated clients may break |
 | AsyncAPI | Provide richer status information to shipping partners | Change `status` from a string to a structured object; existing event consumers may fail |
 

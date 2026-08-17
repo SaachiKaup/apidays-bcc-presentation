@@ -17,11 +17,11 @@ type Order {
   id: ID!
   customerName: String!
   status: OrderStatus!
-  deliveryDate: DateTime!
+  deliveryDate: DateTime
   total: Money!
 }
 
 type Query {
   order(id: ID!): Order!
-  orders(status: OrderStatus, skip: Int = 0, limit: Int = 20): [Order!]!
+  orders(status: OrderStatus!, skip: Int = 0, limit: Int = 20): [Order!]!
 }

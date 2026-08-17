@@ -10,7 +10,7 @@ Show optional `skip` and `limit` pagination as a compatible change. Then make `l
 
 ## 7:30–15:30 — Multi-specification BCC showcase
 
-Use prepared examples for GraphQL, gRPC, and AsyncAPI: rename `customerName` to `buyerName`, change `orderId` from an integer to a string, and change a string `status` into a structured event object. For each, show the business motivation, proposed change, BCC result, affected contract location, and a brief remediation option.
+Use prepared examples for GraphQL, gRPC, and AsyncAPI: make the optional GraphQL `status` argument mandatory, change `orderId` from an integer to a string, and change a string `status` into a structured event object. For each, show the business motivation, proposed change, BCC result, affected contract location, and a brief remediation option.
 
 ## 15:30–16:30 — WIP workflow
 

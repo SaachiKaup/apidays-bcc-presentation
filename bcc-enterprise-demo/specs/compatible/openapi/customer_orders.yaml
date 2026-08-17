@@ -19,7 +19,7 @@ paths:
         - name: status
           in: query
           required: false
-          schema: { $ref: '#/components/schemas/OrderStatusCode' }
+          schema: { $ref: '#/components/schemas/OrderStatus' }
         - name: size
           in: query
           required: false
@@ -127,12 +127,8 @@ components:
       type: object
       required: [updatedAt, reason]
       properties:
-        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
         reason: { type: string }
         updatedAt: { type: string, format: date-time }
-    OrderStatusCode:
-      type: string
-      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
     Problem:
       type: object
       required: [code, message]
