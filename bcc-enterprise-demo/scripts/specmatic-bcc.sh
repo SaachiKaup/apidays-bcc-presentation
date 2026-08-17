@@ -12,7 +12,7 @@ rm -rf "$REPO_ROOT/build" "$DEMO_ROOT/build"
 echo "Running:"
 case "$TARGET" in
   */openapi|*/openapi/*)
-    echo "docker run --rm -v $REPO_ROOT:/usr/src/app specmatic/enterprise backward-compatibility-check --base-branch main --target-path $TARGET"
+    echo "docker run --rm -v $REPO_ROOT:/usr/src/app specmatic/enterprise backward-compatibility-check --strict --base-branch main --target-path $TARGET"
     echo
 
     docker run --rm \
@@ -38,6 +38,7 @@ case "$TARGET" in
       -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
       specmatic/enterprise \
       backward-compatibility-check \
+      --strict \
       --base-branch main \
       --target-path "$TARGET"
     ;;
