@@ -19,7 +19,7 @@ The OpenAPI baseline, breaking example, compatible example, scripts, README, and
 
 ## Pre-canned demonstrations
 
-- GraphQL: make nullable `deliveryDate` non-null because the provider wants every order to display a delivery date.
+- GraphQL: make the existing optional `status` argument mandatory because the provider wants every query to filter by status.
 - gRPC: change `order_id` from `int64` to `string` because global identifiers are required.
 - AsyncAPI: change event `status` from a string to an object containing code, reason, and timestamp.
 

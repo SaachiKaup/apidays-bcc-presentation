@@ -146,7 +146,6 @@ components:
       type: object
       required: [updatedAt, reason]
       properties:
-        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
         reason: { type: string }
         updatedAt: { type: string, format: date-time }
     OrderStatusCode:

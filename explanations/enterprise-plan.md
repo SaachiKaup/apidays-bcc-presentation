@@ -15,7 +15,7 @@ The central question is:
 | Contract | Scenario & motivation | Legitimate proposed change | BCC finding | Remediation to demonstrate |
 |---|---|---|---|---|
 | OpenAPI | Order history is growing, so clients need pagination, and error handling is being standardized across the platform | Add optional `skip` and `limit` parameters as the safe change; make `limit` mandatory and change `404` to `422` as the breaking changes | Request-parameter and status-code incompatibility | Keep `limit` optional with a default; preserve `404`; use a new endpoint or version for the new behavior |
-| GraphQL | The customer portal is standardizing terminology with the rest of the order platform | Add optional `estimatedDelivery` as the safe change; rename `customerName` to `buyerName` as the breaking change | Existing queries selecting `customerName` no longer match the schema | Keep `customerName`, add `buyerName`, and deprecate the old field gradually |
+| GraphQL | The customer portal wants every order query filtered by status | Add an optional status argument as the safe change; make the existing `status` argument mandatory as the breaking change | Existing queries that omit `status` no longer match the schema | Keep the argument optional, or introduce a new query/version with the mandatory behavior |
 | gRPC | The warehouse system is expanding globally and needs IDs such as `EU-2026-00123` | Add optional `warehouseId` as the safe change; change `orderId` from an integer to a string as the breaking change | Protobuf field-type incompatibility; existing generated clients expect a number | Keep numeric `orderId` and add `globalOrderId: string`, or introduce a new RPC |
 | AsyncAPI | Shipping partners need richer shipment-status information | Add optional `trackingUrl` as the safe change; change `status` from a string into an object containing `code`, `reason`, and `updatedAt` as the breaking change | Event payload-shape incompatibility; existing consumers expect a string | Keep `status` as a string and add optional `statusDetails`, or publish a new event version |
 
@@ -55,7 +55,7 @@ For GraphQL, gRPC, and AsyncAPI, use short prepared examples. Do not teach each 
 The examples should vary by specification so the demonstration shows different compatibility surfaces rather than repeating the OpenAPI example:
 
 - OpenAPI: request parameters, response shape, and status-code semantics;
-- GraphQL: field selection and schema evolution—for example, renaming `customerName` to `buyerName`;
+- GraphQL: query arguments and schema evolution—for example, making an optional `status` argument mandatory;
 - gRPC: RPC methods and protobuf message types;
 - AsyncAPI: channels, operations, and message payloads—for example, changing a string `status` into a structured status object.
 

@@ -6,6 +6,7 @@ on:
       - "bcc-enterprise-demo/specs/**"
       - "bcc-enterprise-demo/scripts/**"
       - ".github/workflows/bcc.yml"
+      - "explanations/**"
 
 jobs:
   openapi-bcc:
