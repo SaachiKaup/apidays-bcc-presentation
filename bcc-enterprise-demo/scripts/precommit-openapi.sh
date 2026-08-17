@@ -50,13 +50,21 @@ done <<EOF
 $(git diff --cached --name-only --diff-filter=ACM)
 EOF
 
+LICENSE="$DEMO_ROOT/enterprise-license.txt"
+if [ ! -f "$LICENSE" ]; then
+  echo "Enterprise license not found: $LICENSE" >&2
+  exit 1
+fi
+
 echo "Running:"
-echo "docker run --rm -v $SNAPSHOT:/usr/src/app specmatic/enterprise backward-compatibility-check --base-branch main --target-path $TARGET"
+echo "docker run --rm -v $SNAPSHOT:/usr/src/app -v $LICENSE:/specmatic/specmatic-license.txt:ro -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt specmatic/enterprise backward-compatibility-check --base-branch main --target-path $TARGET"
 echo
 
 set +e
 docker run --rm \
   -v "$SNAPSHOT:/usr/src/app" \
+  -v "$LICENSE:/specmatic/specmatic-license.txt:ro" \
+  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
   specmatic/enterprise \
   backward-compatibility-check \
   --base-branch main \
