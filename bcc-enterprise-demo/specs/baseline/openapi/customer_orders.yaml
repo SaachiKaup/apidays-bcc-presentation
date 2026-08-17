@@ -22,19 +22,19 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatus'
-#        - name: size
-#          in: query
-#          required: false
-#          schema:
-#            type: integer
-#            minimum: 1
-#            default: 20
-#        - name: offset
-#          in: query
-#          required: true
-#          schema:
-#            type: integer
-#            minimum: 0
+      #        - name: size
+      #          in: query
+      #          required: false
+      #          schema:
+      #            type: integer
+      #            minimum: 1
+      #            default: 20
+      #        - name: offset
+      #          in: query
+      #          required: true
+      #          schema:
+      #            type: integer
+      #            minimum: 0
       responses:
         '200':
           description: Orders
@@ -58,15 +58,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-#        '202':
-#          description: Order accepted and queued for background creation
-#          headers:
-#            Link:
-#              description: Link used to monitor order-creation progress
-#              schema:
-#                type: string
-#                description: Monitor link to check order-creation status
-#                example: </monitor/abc-123>;rel=related;title=monitor
+  #        '202':
+  #          description: Order accepted and queued for background creation
+  #          headers:
+  #            Link:
+  #              description: Link used to monitor order-creation progress
+  #              schema:
+  #                type: string
+  #                description: Monitor link to check order-creation status
+  #                example: </monitor/abc-123>;rel=related;title=monitor
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -123,10 +123,10 @@ components:
       type: integer
       format: int64
       example: 202600123
-#    OrderId:
-#      type: string
-#      format: uuid
-#      example: 550e8400-e29b-41d4-a716-446655440000
+    #    OrderId:
+    #      type: string
+    #      format: uuid
+    #      example: 550e8400-e29b-41d4-a716-446655440000
     CreateOrderRequest:
       type: object
       required: [customerId, total]
@@ -159,12 +159,12 @@ components:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
     #OrderStatus:
-#      type: object
-#      required: [updatedAt, reason]
-#      properties:
-#        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
-#        reason: { type: string }
-#        updatedAt: { type: string, format: date-time }
+    #      type: object
+    #      required: [updatedAt, reason]
+    #      properties:
+    #        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
+    #        reason: { type: string }
+    #        updatedAt: { type: string, format: date-time }
     Problem:
       type: object
       required: [code, message]
