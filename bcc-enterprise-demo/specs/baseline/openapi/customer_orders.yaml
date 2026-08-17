@@ -22,19 +22,19 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatus'
-#        - name: size
-#          in: query
-#          required: false
-#          schema:
-#            type: integer
-#            minimum: 1
-#            default: 20
-#        - name: offset
-#          in: query
-#          required: true
-#          schema:
-#            type: integer
-#            minimum: 0
+      #        - name: size
+      #          in: query
+      #          required: false
+      #          schema:
+      #            type: integer
+      #            minimum: 1
+      #            default: 20
+      #        - name: offset
+      #          in: query
+      #          required: true
+      #          schema:
+      #            type: integer
+      #            minimum: 0
       responses:
         '200':
           description: Orders
@@ -52,22 +52,21 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateOrderRequest'
       responses:
-        # DEMO 3 — breaking: comment out the active 201 block, then uncomment
         '201':
           description: Order created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-#        '202':
-#          description: Order accepted and queued for background creation
-#          headers:
-#            Link:
-#              description: Link used to monitor order-creation progress
-#              schema:
-#                type: string
-#                description: Monitor link to check order-creation status
-#                example: </monitor/abc-123>;rel=related;title=monitor
+  #        '202':
+  #          description: Order accepted and queued for background creation
+  #          headers:
+  #            Link:
+  #              description: Link used to monitor order-creation progress
+  #              schema:
+  #                type: string
+  #                description: Monitor link to check order-creation status
+  #                example: </monitor/abc-123>;rel=related;title=monitor
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -120,15 +119,14 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
-    # DEMO 4 — breaking: replace the active OrderId definition with this UUID version.
     OrderId:
       type: integer
       format: int64
       example: 202600123
-#    OrderId:
-#      type: string
-#      format: uuid
-#      example: 550e8400-e29b-41d4-a716-446655440000
+    #    OrderId:
+    #      type: string
+    #      format: uuid
+    #      example: 550e8400-e29b-41d4-a716-446655440000
     CreateOrderRequest:
       type: object
       required: [customerId, total]
@@ -152,11 +150,6 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/OrderStatus'
-        # DEMO 6 — compatible: preserve status and uncomment updates plus its schema below.
-        #updates:
-        #  type: array
-        #  items:
-        #    $ref: '#/components/schemas/OrderUpdate'
         total:
           type: number
           format: double
@@ -165,27 +158,13 @@ components:
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-    # DEMO 5 — breaking: replace the active string status definition with this array.
     #OrderStatus:
-    #  type: array
-    #  items:
-    #    $ref: '#/components/schemas/OrderUpdate'
-    OrderStatusCode:
-      type: string
-      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-    # DEMO 6 — compatible: uncomment this reusable update schema with the updates field above.
-    #OrderUpdate:
-    #  type: object
-    #  required: [updatedAt, reason]
-    #  properties:
-    #    code:
-    #      type: string
-    #      enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-    #    reason:
-    #      type: string
-    #    updatedAt:
-    #      type: string
-    #      format: date-time
+    #      type: object
+    #      required: [updatedAt, reason]
+    #      properties:
+    #        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
+    #        reason: { type: string }
+    #        updatedAt: { type: string, format: date-time }
     Problem:
       type: object
       required: [code, message]
