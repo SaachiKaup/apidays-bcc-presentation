@@ -27,8 +27,8 @@ paths:
 #          required: false
 #          schema:
 #            type: integer
-#            minimum: 0
-#            default: 19
+#            minimum: 1
+#            default: 20
 #        - name: offset
 #          in: query
 #          required: true
@@ -158,13 +158,13 @@ components:
     OrderStatus:
       type: string
       enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED]
-#    OrderStatus:
-#          type: object
-#          required: [updatedAt, reason]
-#          properties:
-#            code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
-#            reason: { type: string }
-#            updatedAt: { type: string, format: date-time }
+    #OrderStatus:
+#      type: object
+#      required: [updatedAt, reason]
+#      properties:
+#        code: { type: string, enum: [PENDING, ACCEPTED, SHIPPED, DELIVERED, CANCELLED] }
+#        reason: { type: string }
+#        updatedAt: { type: string, format: date-time }
     Problem:
       type: object
       required: [code, message]
