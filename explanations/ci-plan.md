@@ -1,10 +1,22 @@
 # GitHub Actions CI Plan
 
-This plan adds a pull-request check for the unified customer-orders OpenAPI contract. The contract contains the pagination, naming, identifier, status, and error-response scenarios used in the demo.
+This plan adds a pull-request check for the unified customer-orders OpenAPI contract. The contract contains the pagination, identifier, status, and asynchronous-creation scenarios used in the demo.
+
+## Important: local commit versus CI
+
+For the intentional failing demonstration, the local pre-commit hook may block the commit before the branch can be pushed. That is expected: the hook is doing its job locally, but this demo needs GitHub Actions to display the failed PR check.
+
+Use:
+
+```shell
+git commit --no-verify -m "Demo: make order offset mandatory"
+```
+
+Then push the branch and open the pull request. Do not run the commit command twice. The PR is intentionally allowed to contain the breaking spec so that CI can report `INCOMPATIBLE`.
 
 ## 1. Add the Enterprise license to GitHub
 
-In the GitHub repository:
+The CI workflow uses `specmatic/enterprise:latest`, so configure the license in GitHub:
 
 1. Open **Settings → Environments**.
 2. Create or open the environment named `SPECMATIC_LICENSE_ENV`.
@@ -23,7 +35,6 @@ The workflow:
 
 - runs for pull requests that change specifications or the workflow;
 - checks out the full Git history;
-- creates the license file from the GitHub secret;
 - runs the Specmatic Enterprise Docker image;
 - compares the pull request with its target branch;
 - fails when the OpenAPI contract is incompatible.
@@ -31,16 +42,20 @@ The workflow:
 The important command is:
 
 ```shell
-docker compose \
-  -f bcc-enterprise-demo/docker-compose.yml \
-  run --rm \
-  --entrypoint specmatic \
-  bcc \
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v ${PWD}:/workspace \
+  -v ${PWD}/bcc-enterprise-demo/license.txt:/specmatic/specmatic-license.txt:ro \
+  -w /workspace \
+  -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
+  specmatic/enterprise:latest \
   backward-compatibility-check \
   --base-branch origin/main \
   --repo-dir /workspace \
-  --target-path bcc-enterprise-demo/specs/baseline/openapi/customer_orders.yaml
+  --target-path bcc-enterprise-demo/specs/baseline/openapi
 ```
+
+This follows the backward-compatibility lab: run it from the repository root so `/workspace` contains both `.git` and `bcc-enterprise-demo`. Mounting only `bcc-enterprise-demo` hides the Git metadata, so Specmatic cannot resolve `origin/main`. The workflow also fetches and verifies the pull request's base ref before running BCC.
 
 ## 3. Commit the workflow
 
@@ -129,11 +144,22 @@ mandatory offset → CI failed
 optional size    → CI passed
 ```
 
-## 6. Presentation narration
+## 6. Make the CI check block merging
+
+In GitHub, open **Settings → Branches** and add a protection rule for `main`:
+
+1. Require a pull request before merging.
+2. Require status checks to pass before merging.
+3. Select `BCC / OpenAPI baseline` as a required check.
+4. Save the rule.
+
+Without this branch-protection setting, GitHub Actions can report a failed check but GitHub will still allow the pull request to merge.
+
+## 7. Presentation narration
 
 > We ran the same BCC check locally and in the pull request. The only difference is the baseline: locally we compare with `main`; in CI we compare with the pull request's target branch. The one customer-orders contract lets us show several compatibility surfaces without switching demos.
 
-## 7. Clean up the demonstration
+## 8. Clean up the demonstration
 
 After the presentation:
 
@@ -152,6 +178,7 @@ Keep the workflow, the `SPECMATIC_LICENSE_ENV` environment, and its license secr
 - A pull request changing `offset` to mandatory fails.
 - A pull request adding optional `size` passes.
 - The check runs through Docker.
-- The license is supplied through a GitHub secret.
+- The check runs with the demo Docker image.
 - The workflow compares against the pull request's base branch.
-- No local `license.txt` is committed.
+- The failing demo commit uses `--no-verify` so CI, rather than the local hook, displays the failure.
+- Branch protection marks `BCC / OpenAPI baseline` as required.

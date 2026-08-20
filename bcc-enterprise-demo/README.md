@@ -269,7 +269,7 @@ The helper can apply the equivalent changes automatically, but it is not require
 
 ## Run BCC with Docker
 
-From the repository root:
+From the repository root, the lab-style command is:
 
 The command used in the demo is:
 

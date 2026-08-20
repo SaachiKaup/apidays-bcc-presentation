@@ -22,13 +22,13 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/OrderStatus'
-#        - name: size
-#          in: query
-#          required: false
-#          schema:
-#            type: integer
-#            minimum: 1
-#            default: 20
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
 #        - name: offset
 #          in: query
 #          required: true
