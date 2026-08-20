@@ -67,7 +67,7 @@ docker run --rm \
   -e SPECMATIC_LICENSE_PATH=/specmatic/specmatic-license.txt \
   specmatic/enterprise \
   backward-compatibility-check \
-  --base-branch main \
+  --strict --base-branch main \
   --target-path "$TARGET"
 STATUS=$?
 set -e
