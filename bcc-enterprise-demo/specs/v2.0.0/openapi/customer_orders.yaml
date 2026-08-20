@@ -83,21 +83,6 @@ paths:
           $ref: '#/components/responses/OrderNotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /client_orders:
-    get:
-      operationId: listClientOrders
-      summary: List orders for a client
-      parameters:
-        - name: clientId
-          in: query
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Orders for the client
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/OrderList' }
 components:
   parameters:
     OrderId:
